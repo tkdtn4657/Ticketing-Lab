@@ -6,9 +6,11 @@ import com.ticketinglab.user.infrastructure.jpa.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 @RequiredArgsConstructor
-public class JpaUserRepository implements UserRepository {
+public class UserRepositoryAdapter implements UserRepository {
 
     private final UserJpaRepository jpaRepository;
 
@@ -20,6 +22,11 @@ public class JpaUserRepository implements UserRepository {
     @Override
     public boolean existsByEmail(String email) {
         return jpaRepository.existsByEmail(email);
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return jpaRepository.findByEmail(email);
     }
 
 }

@@ -1,36 +1,41 @@
 package com.ticketinglab.auth.infrastructure;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import com.ticketinglab.auth.infrastructure.jwt.JwtAuthenticationFilter;
+import com.ticketinglab.auth.infrastructure.jwt.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.*;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.*;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtTokenProvider jwtTokenProvider;
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Postman으로 POST/PUT/DELETE 테스트 쉽게 하려면 일단 비활성화
                 .csrf(csrf -> csrf.disable())
-
-                // 전체 허용
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .anyRequest().authenticated()
                 )
-
-                // 기본 로그인 폼/Basic 인증도 불필요하면 끄기(선택)
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable());
+                .addFilterBefore(
+                        new JwtAuthenticationFilter(jwtTokenProvider),
+                        UsernamePasswordAuthenticationFilter.class
+                );
 
         return http.build();
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 }

@@ -1,7 +1,9 @@
 package com.ticketinglab.auth.presentation.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public record SignupRequest(
-        String email,
-        String password
+        @NotBlank String email,
+        @NotBlank String password
 ) {
 }

@@ -1,6 +1,6 @@
 package com.ticketinglab.auth.presentation.dto;
 
-public record SignupResponse(
+public record LoginRequest(
         String email,
         String password
 ) {
