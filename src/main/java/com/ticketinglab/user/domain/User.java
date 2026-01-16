@@ -1,9 +1,7 @@
 package com.ticketinglab.user.domain;
 
-import com.ticketinglab.auth.presentation.dto.SignupCreateDto;
-import com.ticketinglab.auth.presentation.dto.SignupRequest;
+import com.ticketinglab.auth.presentation.dto.SignupResponse;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -30,7 +28,7 @@ public class User {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    public static User createUser(SignupCreateDto dto) {
+    public static User createUser(SignupResponse dto) {
         return User.builder()
                 .email(dto.email())
                 .passwordHash(dto.password())

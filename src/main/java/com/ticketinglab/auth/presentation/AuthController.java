@@ -18,12 +18,9 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<SignupRequest> signup(@Valid @RequestBody SignupRequest requestBody){
-
-        log.info("requestData = {}", requestBody.email());
-
         signupUseCase.execute(requestBody);
 
-        return ResponseEntity.ok(requestBody);
+        return ResponseEntity.ok().build();
     }
 
 }

@@ -2,12 +2,9 @@ package com.ticketinglab.user.infrastructure;
 
 import com.ticketinglab.user.domain.User;
 import com.ticketinglab.user.domain.UserRepository;
+import com.ticketinglab.user.infrastructure.jpa.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
-import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
