@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auth Controller Test Console</title>
+    <link rel="stylesheet" href="/css/auth-test.css" />
+</head>
+<body>
+<main class="page">
+    <header class="hero card">
+        <div class="hero-copy">
+            <p class="eyebrow">AUTH CONTROLLER</p>
+            <h1>한 화면에서 인증 흐름 확인하기</h1>
+            <p class="hero-text">
+                Swagger가 API 문서를 보는 도구라면, 이 페이지는 <code>signup -&gt; login -&gt; me -&gt; refresh -&gt; logout</code>
+                흐름을 빠르게 직접 검증하기 위한 테스트 콘솔입니다.
+            </p>
+        </div>
+        <div class="hero-panel">
+            <p class="hero-panel-label">권장 확인 순서</p>
+            <ol>
+                <li>같은 이메일로 <strong>회원가입</strong> 후 <code>userId</code> 확인</li>
+                <li>같은 계정으로 <strong>로그인</strong> 후 access / refresh token 확인</li>
+                <li><strong>내 정보 조회</strong>로 현재 사용자 정보 확인</li>
+                <li><strong>토큰 재발급</strong>으로 refresh token 회전 확인</li>
+                <li><strong>로그아웃</strong> 후 기존 refresh token 재사용 불가 확인</li>
+            </ol>
+        </div>
+    </header>
+
+    <section class="flow-strip" aria-label="Auth endpoints overview">
+        <article class="flow-item">
+            <p>AUTH-001</p>
+            <h2>Signup</h2>
+            <span>POST /api/auth/signup</span>
+        </article>
+        <article class="flow-item">
+            <p>AUTH-002</p>
+            <h2>Login</h2>
+            <span>POST /api/auth/login</span>
+        </article>
+        <article class="flow-item">
+            <p>AUTH-005</p>
+            <h2>Me</h2>
+            <span>GET /api/auth/me</span>
+        </article>
+        <article class="flow-item">
+            <p>AUTH-003</p>
+            <h2>Refresh</h2>
+            <span>POST /api/auth/refresh</span>
+        </article>
+        <article class="flow-item flow-item-danger">
+            <p>AUTH-004</p>
+            <h2>Logout</h2>
+            <span>POST /api/auth/logout</span>
+        </article>
+    </section>
+
+    <section class="workspace">
+        <div class="main-column">
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 1</p>
+                        <h2>계정 정보</h2>
+                    </div>
+                    <p class="section-copy">회원가입과 로그인은 같은 입력값을 공유합니다.</p>
+                </div>
+
+                <div class="form-grid two-col">
+                    <label>
+                        <span>Email</span>
+                        <input id="account-email" type="email" required placeholder="tester@example.com" />
+                    </label>
+                    <label>
+                        <span>Password</span>
+                        <input id="account-password" type="password" minlength="8" required placeholder="8자 이상 입력" />
+                    </label>
+                </div>
+
+                <div class="action-grid two-up">
+                    <button id="signup-button" type="button" class="button button-primary">
+                        <span class="button-code">AUTH-001</span>
+                        <strong>회원가입</strong>
+                    </button>
+                    <button id="login-button" type="button" class="button button-dark">
+                        <span class="button-code">AUTH-002</span>
+                        <strong>로그인</strong>
+                    </button>
+                </div>
+
+                <div class="expect-grid two-col">
+                    <article>
+                        <p class="expect-label">예상 결과</p>
+                        <p><code>{"userId": number}</code></p>
+                        <small>같은 이메일로 다시 요청하면 <code>409 Conflict</code></small>
+                    </article>
+                    <article>
+                        <p class="expect-label">예상 결과</p>
+                        <p><code>{"accessToken", "refreshToken"}</code></p>
+                        <small>응답 본문과 헤더 기준으로 토큰을 확인합니다</small>
+                    </article>
+                </div>
+            </section>
+
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 2</p>
+                        <h2>토큰 작업</h2>
+                    </div>
+                    <p class="section-copy">로그인 성공 후 값이 자동으로 채워집니다.</p>
+                </div>
+
+                <div class="form-grid">
+                    <label>
+                        <span>Access Token</span>
+                        <textarea id="access-token-input" rows="4" placeholder="로그인 후 자동 입력"></textarea>
+                    </label>
+                    <label>
+                        <span>Refresh Token</span>
+                        <textarea id="refresh-token-input" rows="5" placeholder="로그인 후 자동 입력"></textarea>
+                    </label>
+                </div>
+
+                <div class="action-grid three-up">
+                    <button id="me-button" type="button" class="button button-neutral">
+                        <span class="button-code">AUTH-005</span>
+                        <strong>내 정보 조회</strong>
+                    </button>
+                    <button id="refresh-button" type="button" class="button button-secondary">
+                        <span class="button-code">AUTH-003</span>
+                        <strong>토큰 재발급</strong>
+                    </button>
+                    <button id="logout-button" type="button" class="button button-danger">
+                        <span class="button-code">AUTH-004</span>
+                        <strong>로그아웃</strong>
+                    </button>
+                </div>
+
+                <div class="note-box">
+                    <strong>체크 포인트</strong>
+                    <ul>
+                        <li>중복 회원가입은 <code>409 Conflict</code>가 나와야 합니다.</li>
+                        <li>Refresh 성공 후에는 이전 refresh token이 더 이상 유효하지 않아야 합니다.</li>
+                        <li>Logout 이후에는 기존 refresh token으로 재발급이 실패해야 합니다.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="card utility-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">UTILITY</p>
+                        <h2>보조 작업</h2>
+                    </div>
+                </div>
+                <div class="utility-row">
+                    <button id="clear-state-button" type="button" class="button button-inline">로컬 상태 초기화</button>
+                    <p>브라우저에 보이는 세션 상태와 응답 로그만 초기화합니다.</p>
+                </div>
+            </section>
+        </div>
+
+        <aside class="side-column">
+            <section class="card state-card sticky-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">SESSION</p>
+                        <h2>현재 상태</h2>
+                    </div>
+                    <span id="auth-status" class="status idle">NOT AUTHENTICATED</span>
+                </div>
+
+                <div class="state-grid">
+                    <article>
+                        <span class="field-label">User ID</span>
+                        <strong id="state-user-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Role</span>
+                        <strong id="state-role">-</strong>
+                    </article>
+                    <article class="wide">
+                        <span class="field-label">Email</span>
+                        <strong id="state-email">-</strong>
+                    </article>
+                </div>
+
+                <label>
+                    <span class="field-label">Access Token Snapshot</span>
+                    <textarea id="state-access-token" rows="5" readonly></textarea>
+                </label>
+                <label>
+                    <span class="field-label">Refresh Token Snapshot</span>
+                    <textarea id="state-refresh-token" rows="6" readonly></textarea>
+                </label>
+            </section>
+
+            <section class="card response-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">RESPONSE</p>
+                        <h2>최근 응답</h2>
+                    </div>
+                    <button id="clear-log" type="button" class="button button-inline">로그 지우기</button>
+                </div>
+
+                <div class="response-meta">
+                    <div>
+                        <span class="meta-label">Action</span>
+                        <strong id="last-action">Ready</strong>
+                    </div>
+                    <div>
+                        <span class="meta-label">Status</span>
+                        <strong id="last-status">No request yet</strong>
+                    </div>
+                </div>
+
+                <pre id="result-view">{
+  "ready": true,
+  "message": "Auth Controller Test Console loaded"
+}</pre>
+            </section>
+        </aside>
+    </section>
+</main>
+<script src="/js/auth-test.js"></script>
+</body>
+</html>
