@@ -1,6 +1,7 @@
 package com.ticketinglab.auth.infrastructure.jwt;
 
-import jakarta.servlet.*;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
@@ -25,7 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = resolveBearerToken(request);
 
-        if (token != null && tokenProvider.validate(token)) {
+        if (token != null && tokenProvider.isValidAccessToken(token)) {
             SecurityContextHolder.getContext()
                     .setAuthentication(tokenProvider.getAuthentication(token));
         }
