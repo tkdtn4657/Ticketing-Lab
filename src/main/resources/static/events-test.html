@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Events API Test Console</title>
+    <link rel="stylesheet" href="css/events-test.css" />
+</head>
+<body>
+<main class="page">
+    <header class="hero card">
+        <div class="hero-copy">
+            <p class="eyebrow">EVENTS API</p>
+            <h1>이벤트 조회 API 테스트 콘솔</h1>
+            <p class="hero-text">
+                <code>EVT-001</code> 목록 조회와 <code>EVT-002</code> 상세+회차 조회를 한 화면에서 확인할 수 있는 테스트 페이지입니다.
+                상태 필터를 바꿔 목록을 가져오고, 원하는 이벤트를 선택해 상세 응답과 회차 배열을 바로 검증해보세요.
+            </p>
+        </div>
+        <div class="hero-panel">
+            <p class="hero-panel-label">권장 확인 순서</p>
+            <ol>
+                <li><strong>목록 조회</strong>에서 <code>status</code> 필터를 선택하거나 비워둡니다.</li>
+                <li><strong>EVT-001</strong> 요청으로 현재 DB에 있는 이벤트 목록을 가져옵니다.</li>
+                <li>목록 카드의 <strong>상세 조회</strong> 버튼으로 <code>eventId</code>를 자동 입력합니다.</li>
+                <li><strong>EVT-002</strong> 응답에서 이벤트 정보와 <code>shows[]</code> 구조를 확인합니다.</li>
+            </ol>
+        </div>
+    </header>
+
+    <section class="flow-strip" aria-label="Events endpoints overview">
+        <article class="flow-item">
+            <p>EVT-001</p>
+            <h2>이벤트 목록</h2>
+            <span>GET /api/events</span>
+        </article>
+        <article class="flow-item">
+            <p>FILTER</p>
+            <h2>상태 조건</h2>
+            <span>status? = DRAFT | PUBLISHED | CANCELLED</span>
+        </article>
+        <article class="flow-item flow-item-accent">
+            <p>EVT-002</p>
+            <h2>이벤트 상세+회차</h2>
+            <span>GET /api/events/{eventId}</span>
+        </article>
+    </section>
+
+    <section class="workspace">
+        <div class="main-column">
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 1</p>
+                        <h2>이벤트 목록 조회</h2>
+                    </div>
+                    <p class="section-copy">필터 없이 전체 조회하거나, 상태별로 이벤트를 좁혀서 확인할 수 있습니다.</p>
+                </div>
+
+                <form id="list-form" class="form-grid">
+                    <div class="form-grid two-col">
+                        <label>
+                            <span>Status Filter</span>
+                            <select id="status-filter">
+                                <option value="">전체</option>
+                                <option value="DRAFT">DRAFT</option>
+                                <option value="PUBLISHED">PUBLISHED</option>
+                                <option value="CANCELLED">CANCELLED</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Query Preview</span>
+                            <input id="list-endpoint-preview" type="text" value="/api/events" readonly />
+                        </label>
+                    </div>
+
+                    <div class="action-grid single">
+                        <button id="load-events-button" type="submit" class="button button-primary">
+                            <span class="button-code">EVT-001</span>
+                            <strong>이벤트 목록 조회</strong>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="expect-grid two-col">
+                    <article>
+                        <p class="expect-label">응답 구조</p>
+                        <p><code>{ "events": [...] }</code></p>
+                        <small>필터를 비워두면 전체 목록을 조회합니다.</small>
+                    </article>
+                    <article>
+                        <p class="expect-label">체크 포인트</p>
+                        <p><code>status</code>가 잘못되면 <code>400 Bad Request</code></p>
+                        <small>유효 상태값은 DRAFT, PUBLISHED, CANCELLED 입니다.</small>
+                    </article>
+                </div>
+            </section>
+
+            <section class="card board-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">LIST</p>
+                        <h2>조회된 이벤트</h2>
+                    </div>
+                    <span id="list-summary-badge" class="status idle">No Events Loaded</span>
+                </div>
+                <div id="event-list-view" class="event-list-grid"></div>
+            </section>
+
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 2</p>
+                        <h2>이벤트 상세+회차 조회</h2>
+                    </div>
+                    <p class="section-copy">목록 카드에서 바로 선택하거나 eventId를 직접 입력해 상세 응답을 확인합니다.</p>
+                </div>
+
+                <form id="detail-form" class="form-grid">
+                    <div class="form-grid two-col">
+                        <label>
+                            <span>Event ID</span>
+                            <input id="event-id-input" type="number" min="1" step="1" placeholder="예: 1" required />
+                        </label>
+                        <label>
+                            <span>Detail Endpoint</span>
+                            <input id="detail-endpoint-preview" type="text" value="/api/events/{eventId}" readonly />
+                        </label>
+                    </div>
+
+                    <div class="action-grid single">
+                        <button id="load-event-detail-button" type="submit" class="button button-accent">
+                            <span class="button-code">EVT-002</span>
+                            <strong>이벤트 상세 조회</strong>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="note-box">
+                    <strong>안내</strong>
+                    <ul>
+                        <li>존재하지 않는 <code>eventId</code>를 조회하면 <code>404 Not Found</code>가 내려옵니다.</li>
+                        <li>회차가 없는 이벤트라면 <code>shows</code> 배열은 빈 배열로 응답됩니다.</li>
+                        <li>현재 애플리케이션 DB에 이벤트 데이터가 없다면 목록은 빈 상태로 표시됩니다.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="card board-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">DETAIL</p>
+                        <h2>선택된 이벤트 상세</h2>
+                    </div>
+                    <span id="detail-summary-badge" class="status idle">No Event Selected</span>
+                </div>
+                <div id="event-detail-view" class="detail-shell"></div>
+            </section>
+
+            <section class="card utility-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">UTILITY</p>
+                        <h2>보조 작업</h2>
+                    </div>
+                </div>
+                <div class="utility-row">
+                    <button id="clear-state-button" type="button" class="button button-inline">화면 상태 초기화</button>
+                    <p>선택된 이벤트, 목록 카드, 상세 패널, 응답 로그를 처음 상태로 되돌립니다.</p>
+                </div>
+            </section>
+        </div>
+
+        <aside class="side-column">
+            <section class="card state-card sticky-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">STATE</p>
+                        <h2>현재 상태</h2>
+                    </div>
+                    <span id="console-status" class="status idle">Ready</span>
+                </div>
+
+                <div class="state-grid">
+                    <article>
+                        <span class="field-label">Filter</span>
+                        <strong id="state-filter">ALL</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Listed Count</span>
+                        <strong id="state-list-count">0</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Selected Event ID</span>
+                        <strong id="state-selected-id">-</strong>
+                    </article>
+                    <article class="wide">
+                        <span class="field-label">Selected Title</span>
+                        <strong id="state-selected-title">-</strong>
+                    </article>
+                </div>
+
+                <label>
+                    <span class="field-label">Last List Snapshot</span>
+                    <textarea id="state-events-snapshot" rows="10" readonly></textarea>
+                </label>
+            </section>
+
+            <section class="card response-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">RESPONSE</p>
+                        <h2>최신 응답</h2>
+                    </div>
+                    <button id="clear-log-button" type="button" class="button button-inline">로그 지우기</button>
+                </div>
+
+                <div class="response-meta">
+                    <div>
+                        <span class="meta-label">Action</span>
+                        <strong id="last-action">Ready</strong>
+                    </div>
+                    <div>
+                        <span class="meta-label">Status</span>
+                        <strong id="last-status">No request yet</strong>
+                    </div>
+                </div>
+
+                <pre id="result-view">{
+  "ready": true,
+  "message": "Events API Test Console loaded"
+}</pre>
+            </section>
+        </aside>
+    </section>
+</main>
+<script src="js/events-test.js"></script>
+</body>
+</html>
