@@ -22,11 +22,16 @@
 - 설명은 기본적으로 한글로 적는다.
 - 각 코드별 주석을 이해하기 용이하도록 짧게 적는다.
 - 커밋은 한글로 작성 ex) `feat: 기능 추가`
+- 일관된 코딩 스타일을 적용한다.
 
 ## Implementation Conventions
 - DTO는 Java `record` 사용 가능.
 - JPA Entity 필드명은 camelCase, DB 컬럼은 `snake_case`로 매핑한다.
 - Lombok 사용 시 `@RequiredArgsConstructor` 와 `@NoArgsConstructor` 중복으로 0-arg 생성자가 충돌하지 않게 주의한다.
+- 텍스트 파일은 UTF-8 계열 인코딩을 사용한다.
+- 문서 파일(`*.md`)은 `UTF-8 with BOM`을 사용한다.
+- 소스/설정 파일(`*.java`, `*.yml`, `*.yaml`, `*.sql`, `*.js`, `*.css`, `*.html`, `*.properties`)은 `UTF-8 without BOM`을 사용한다.
+- PowerShell로 파일을 읽거나 쓸 때는 기본 인코딩을 사용하지 말고 파일 종류에 맞는 인코딩을 명시한다.
 
 ## Security Rules
 - Spring MVC 이므로 `SecurityFilterChain` 을 사용한다.

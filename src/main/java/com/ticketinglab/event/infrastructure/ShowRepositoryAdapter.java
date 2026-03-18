@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -17,6 +18,11 @@ public class ShowRepositoryAdapter implements ShowRepository {
     @Override
     public Show save(Show show) {
         return jpaRepository.save(show);
+    }
+
+    @Override
+    public Optional<Show> findById(Long showId) {
+        return jpaRepository.findById(showId);
     }
 
     @Override

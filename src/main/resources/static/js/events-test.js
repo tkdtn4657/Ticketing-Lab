@@ -253,6 +253,7 @@ function renderEventDetail() {
                 <div class="meta-row">
                     <span class="token">venueId ${escapeHtml(show.venueId)}</span>
                     <span class="token">startAt ${escapeHtml(formatDateTime(show.startAt))}</span>
+                    <a class="button button-inline button-link" href="/shows-test.html?showId=${escapeHtml(show.showId)}">SHW-001 열기</a>
                 </div>
             </article>
         `).join("")}</div>`

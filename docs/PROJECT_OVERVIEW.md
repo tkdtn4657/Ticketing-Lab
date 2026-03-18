@@ -41,12 +41,31 @@
 - Payment: `REQUESTED -> APPROVED | FAILED`
 - Ticket: `ISSUED -> USED | CANCELED(optional)`
 
+## 판매 준비 흐름
+1. `Venue`를 생성하거나 수정한다.
+2. 공연장 기준 좌석은 `POST /api/admin/venues/{venueId}/seats`로 등록한다.
+3. 공연장 기준 구역은 `POST /api/admin/venues/{venueId}/sections`로 등록한다.
+4. `Event`를 생성하고, 그 아래에 `Show`를 생성한다.
+5. 회차별 판매 좌석은 `POST /api/admin/shows/{showId}/show-seats`로 생성한다.
+6. 회차별 구역 재고는 `POST /api/admin/shows/{showId}/section-inventories`로 생성한다.
+7. `GET /api/shows/{showId}/availability`는 위에서 생성된 `show_seats`, `show_section_inventories`를 읽는다.
+
+### 좌석 데이터 관점 정리
+- `seats`, `sections`는 공연장 기준정보다.
+- `show_seats`, `show_section_inventories`는 회차별 판매 인벤토리다.
+- 즉 좌석 마스터를 먼저 만들고, 실제 판매용 인벤토리는 회차 생성 뒤 별도로 붙인다.
+- `SHW-001`는 좌석을 생성하지 않고, 이미 준비된 회차 인벤토리를 조회만 한다.
+
 ## MVP 범위
 
 ### 공개 조회
 - `GET /api/events`
 - `GET /api/events/{eventId}`
 - `GET /api/shows/{showId}/availability`
+
+### SHW-001 응답 요약
+- `seats[]`: `seatId`, `label`, `rowNo`, `colNo`, `price`, `available`
+- `sections[]`: `sectionId`, `name`, `price`, `remainingQty`
 
 ### Hold
 - `POST /api/holds`
@@ -77,5 +96,5 @@
 ## 단기 우선순위
 1. Auth 회원가입, 로그인, 토큰 흐름 안정화
 2. Hold/Reservation 동시성 처리 뼈대 구현
-3. Show availability API 구현
+3. Admin venue/show inventory API 구현
 4. 결제 승인과 티켓 발급 연결

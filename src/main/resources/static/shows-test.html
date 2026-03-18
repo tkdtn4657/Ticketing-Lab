@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shows Availability Test Console</title>
+    <link rel="stylesheet" href="/css/shows-test.css" />
+</head>
+<body>
+<main class="page">
+    <header class="hero card">
+        <div class="hero-copy">
+            <p class="eyebrow">SHOWS API</p>
+            <h1>회차 가용성 API 테스트 콘솔</h1>
+            <p class="hero-text">
+                <code>SHW-001</code> 응답에서 좌석 <code>seats[]</code>와 구역 <code>sections[]</code>가 어떻게 내려오는지 바로 검증할 수 있는 테스트 페이지입니다.
+                <code>showId</code>를 입력하거나, 이벤트 테스트 페이지에서 이동해 현재 회차의 좌석 가용 여부와 구역 잔여 수량을 한 번에 확인해 보세요.
+            </p>
+        </div>
+        <div class="hero-panel">
+            <p class="hero-panel-label">권장 확인 순서</p>
+            <ol>
+                <li><strong>Show ID</strong>를 입력하거나 <code>?showId=1</code> 형식으로 페이지를 엽니다.</li>
+                <li><strong>SHW-001</strong> 요청으로 좌석 목록과 구역 목록을 불러옵니다.</li>
+                <li><code>available=true|false</code> 값이 좌석 상태와 맞는지 확인합니다.</li>
+                <li><code>remainingQty = capacity - soldQty - holdQty</code> 계산이 기대값과 맞는지 확인합니다.</li>
+            </ol>
+        </div>
+    </header>
+
+    <section class="flow-strip" aria-label="Shows endpoints overview">
+        <article class="flow-item flow-item-accent">
+            <p>SHW-001</p>
+            <h2>회차 가용성 조회</h2>
+            <span>GET /api/shows/{showId}/availability</span>
+        </article>
+        <article class="flow-item">
+            <p>SEATS</p>
+            <h2>지정 좌석</h2>
+            <span>seatId, label, rowNo, colNo, price, available</span>
+        </article>
+        <article class="flow-item">
+            <p>SECTIONS</p>
+            <h2>구역 잔여 수량</h2>
+            <span>sectionId, name, price, remainingQty</span>
+        </article>
+    </section>
+
+    <section class="workspace">
+        <div class="main-column">
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 1</p>
+                        <h2>회차 가용성 조회</h2>
+                    </div>
+                    <p class="section-copy">회차 ID 하나로 좌석과 구역 가용 정보를 함께 조회합니다. 공개 조회 API라 토큰 없이 바로 테스트할 수 있습니다.</p>
+                </div>
+
+                <form id="availability-form" class="form-grid">
+                    <div class="form-grid two-col">
+                        <label>
+                            <span>Show ID</span>
+                            <input id="show-id-input" type="number" min="1" step="1" placeholder="예: 1" required />
+                        </label>
+                        <label>
+                            <span>Endpoint Preview</span>
+                            <input id="availability-endpoint-preview" type="text" value="/api/shows/{showId}/availability" readonly />
+                        </label>
+                    </div>
+
+                    <div class="action-grid single">
+                        <button id="load-availability-button" type="submit" class="button button-primary">
+                            <span class="button-code">SHW-001</span>
+                            <strong>회차 가용성 조회</strong>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="expect-grid two-col">
+                    <article>
+                        <p class="expect-label">좌석 응답</p>
+                        <p><code>seats[].available</code> 로 가용 여부를 확인합니다.</p>
+                        <small>응답 순서는 rowNo, colNo, seatId 기준으로 정렬됩니다.</small>
+                    </article>
+                    <article>
+                        <p class="expect-label">구역 응답</p>
+                        <p><code>sections[].remainingQty</code> 로 잔여 수량을 확인합니다.</p>
+                        <small>구역은 name, sectionId 순으로 정렬됩니다.</small>
+                    </article>
+                </div>
+
+                <div class="note-box">
+                    <strong>체크 포인트</strong>
+                    <ul>
+                        <li>존재하지 않는 <code>showId</code>를 조회하면 <code>404 Not Found</code>가 내려옵니다.</li>`r`n                        <li>쿼리 파라미터가 없으면 로컬 샘플 회차를 자동으로 찾아 먼저 조회합니다.</li>
+                        <li>좌석 인벤토리나 구역 인벤토리가 없으면 각각 빈 배열로 응답합니다.</li>
+                        <li>이 페이지는 좌석/구역의 현재 조회 상태를 보여주며, 상태 변경은 수행하지 않습니다.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="card board-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">SEATS</p>
+                        <h2>좌석 가용 현황</h2>
+                    </div>
+                    <span id="seats-summary-badge" class="status idle">No Seats Loaded</span>
+                </div>
+                <div id="seat-list-view" class="inventory-grid"></div>
+            </section>
+
+            <section class="card board-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">SECTIONS</p>
+                        <h2>구역 잔여 현황</h2>
+                    </div>
+                    <span id="sections-summary-badge" class="status idle">No Sections Loaded</span>
+                </div>
+                <div id="section-list-view" class="inventory-grid"></div>
+            </section>
+
+            <section class="card utility-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">UTILITY</p>
+                        <h2>보조 작업</h2>
+                    </div>
+                </div>
+                <div class="utility-row">
+                    <button id="clear-state-button" type="button" class="button button-inline">화면 상태 초기화</button>
+                    <p>입력값, 요약 보드, 응답 로그를 초기 상태로 되돌립니다. URL의 <code>showId</code>는 유지하지 않습니다.</p>
+                </div>
+            </section>
+        </div>
+
+        <aside class="side-column">
+            <section class="card state-card sticky-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">STATE</p>
+                        <h2>현재 상태</h2>
+                    </div>
+                    <span id="console-status" class="status idle">Ready</span>
+                </div>
+
+                <div class="state-grid">
+                    <article>
+                        <span class="field-label">Selected Show ID</span>
+                        <strong id="state-show-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Seat Count</span>
+                        <strong id="state-seat-count">0</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Available Seats</span>
+                        <strong id="state-available-seats">0</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Section Count</span>
+                        <strong id="state-section-count">0</strong>
+                    </article>
+                    <article class="wide">
+                        <span class="field-label">Total Remaining Qty</span>
+                        <strong id="state-total-remaining">0</strong>
+                    </article>
+                </div>
+
+                <label>
+                    <span class="field-label">Last Availability Snapshot</span>
+                    <textarea id="state-availability-snapshot" rows="12" readonly></textarea>
+                </label>
+            </section>
+
+            <section class="card response-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">RESPONSE</p>
+                        <h2>최신 응답</h2>
+                    </div>
+                    <button id="clear-log-button" type="button" class="button button-inline">로그 지우기</button>
+                </div>
+
+                <div class="response-meta">
+                    <div>
+                        <span class="meta-label">Action</span>
+                        <strong id="last-action">Ready</strong>
+                    </div>
+                    <div>
+                        <span class="meta-label">Status</span>
+                        <strong id="last-status">No request yet</strong>
+                    </div>
+                </div>
+
+                <pre id="result-view">{
+  "ready": true,
+  "message": "Shows Availability Test Console loaded"
+}</pre>
+            </section>
+        </aside>
+    </section>
+</main>
+<script src="/js/shows-test.js"></script>
+</body>
+</html>

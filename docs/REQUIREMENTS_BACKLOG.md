@@ -20,7 +20,7 @@
 | OAuth2 | REQ-OAUTH-002 | OAuth2 콜백 처리 | code 교환, 사용자 조회/생성, JWT 발급 | P0 | 예정 | |
 | OAuth2 | REQ-OAUTH-003 | 계정 연결 | 로그인 상태에서 소셜 계정 연결/해제 | P1 | 예정 | optional |
 | View | REQ-VIEW-001 | 이벤트 목록/상세 조회 | 이벤트 목록/상세와 회차 조회 제공 | P0 | 구현완료 | EVT-001, EVT-002 |
-| View | REQ-VIEW-002 | 회차 가용성 조회 | 좌석 available, 구역 remaining 제공 | P0 | 예정 | SHW-001 |
+| View | REQ-VIEW-002 | 회차 가용성 조회 | 좌석 available, 구역 remainingQty 제공 | P0 | 구현완료 | SHW-001 |
 | Hold | REQ-HOLD-001 | 홀드 생성 | show 기준 좌석/구역 홀드 생성 | P0 | 예정 | 좌석 중복 여부 결정 필요 |
 | Hold | REQ-HOLD-002 | Hold TTL 만료 | 5분 TTL, 만료 자동 해제 | P0 | 예정 | scheduler/batch |
 | Hold | REQ-HOLD-003 | 동시성 안전성 | 좌석 중복 홀드 불가, 구역 잔여 수량 보호 | P0 | 예정 | 락 전략 필요 |
@@ -32,4 +32,6 @@
 | Ticket | REQ-TKT-001 | 티켓 발급 | 결제 성공 후 ticket 생성 | P0 | 예정 | |
 | Checkin | REQ-CHK-001 | 체크인 | `qrToken` 검증 및 USED 처리 | P1 | 예정 | ADMIN |
 | Admin | REQ-ADM-001 | Venue 등록/수정 | code 기반 upsert, venueId 반환 | P0 | 예정 | |
+| Admin | REQ-ADM-002 | 공연장 좌석/구역 기준정보 등록 | venue 기준 `seats`, `sections`를 생성한다 | P0 | 예정 | SHW-001 선행 |
+| Admin | REQ-ADM-003 | 회차 판매 인벤토리 생성 | show 기준 `show_seats`, `show_section_inventories`를 생성한다 | P0 | 예정 | SHW-001 선행 |
 | Admin | REQ-ADM-004 | 이벤트/회차/판매단위 관리 | 이벤트, 회차, 좌석판매, 구역재고 생성 | P0 | 예정 | |
