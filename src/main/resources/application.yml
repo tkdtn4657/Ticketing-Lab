@@ -23,13 +23,18 @@ spring:
 
 logging:
   level:
-    org.hibernate.SQL: debug
-    org.hibernate.orm.jdbc.bind: trace
+    org.hibernate.SQL: warn
+    org.hibernate.orm.jdbc.bind: off
 
 server:
-  port: 8080
+  port: 9090
 
 jwt:
   secret: "bXktc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTMyLWJ5dGVzIQ=="
   access-token-exp-min: 15
   refresh-token-exp-days: 14
+
+app:
+  sample-data:
+    events:
+      enabled: false
