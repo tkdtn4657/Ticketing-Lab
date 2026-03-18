@@ -42,6 +42,11 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
 }
 
+tasks.named('bootRun') {
+    def activeProfile = System.getProperty('spring.profiles.active') ?: System.getenv('SPRING_PROFILES_ACTIVE') ?: 'local'
+    systemProperty 'spring.profiles.active', activeProfile
+}
+
 tasks.named('test') {
     useJUnitPlatform()
 }

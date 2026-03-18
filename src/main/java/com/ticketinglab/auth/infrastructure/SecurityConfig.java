@@ -49,7 +49,8 @@ public class SecurityConfig {
                                 HttpMethod.GET,
                                 "/",
                                 "/api/events",
-                                "/api/events/**"
+                                "/api/events/**",
+                                "/api/shows/**"
                         ).permitAll()
                         .requestMatchers(
                                 HttpMethod.POST,
@@ -81,6 +82,8 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/events", configuration);
         source.registerCorsConfiguration("/api/events/**", configuration);
+        source.registerCorsConfiguration("/api/shows", configuration);
+        source.registerCorsConfiguration("/api/shows/**", configuration);
         return source;
     }
 

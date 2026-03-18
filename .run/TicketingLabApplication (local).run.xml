@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="TicketingLabApplication (local)" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.ticketinglab.TicketingLabApplication" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <module name="ticketingLab.main" />
+    <envs>
+      <env name="SPRING_PROFILES_ACTIVE" value="local" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
