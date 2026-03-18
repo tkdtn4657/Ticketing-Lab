@@ -1,4 +1,4 @@
-# AGENTS.md - Ticketing-Lab-2
+﻿# AGENTS.md - Ticketing-Lab-2
 
 ## Purpose
 - This file is the working guide for coding agents.
@@ -19,6 +19,8 @@
 - Controller는 thin 하게 유지한다: 입력 검증, UseCase 호출, 응답 조립만 담당한다.
 - UseCase는 유스케이스 단위로 분리하고, 가능하면 `execute()` 중심의 단일 진입점을 유지한다.
 - domain 에는 행위와 규칙을 두고, Controller/Service가 비대해지지 않게 한다.
+- 설명은 기본적으로 한글로 적는다.
+- 각 코드별 주석을 이해하기 용이하도록 짧게 적는다.
 
 ## Implementation Conventions
 - DTO는 Java `record` 사용 가능.
