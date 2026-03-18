@@ -21,6 +21,7 @@
 - domain 에는 행위와 규칙을 두고, Controller/Service가 비대해지지 않게 한다.
 - 설명은 기본적으로 한글로 적는다.
 - 각 코드별 주석을 이해하기 용이하도록 짧게 적는다.
+- 커밋은 한글로 작성 ex) `feat: 기능 추가`
 
 ## Implementation Conventions
 - DTO는 Java `record` 사용 가능.
