@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin API Test Console</title>
+    <link rel="stylesheet" href="/css/admin-test.css" />
+</head>
+<body>
+<main class="page">
+    <header class="hero card">
+        <div class="hero-copy">
+            <p class="eyebrow">ADMIN CONSOLE</p>
+            <h1>공연장부터 회차 인벤토리까지 한 번에 검증하기</h1>
+            <p class="hero-text">
+                이 페이지는 <code>venue -&gt; seats/sections -&gt; event/show -&gt; show inventory</code> 흐름을
+                끊기지 않게 확인하기 위한 어드민 테스트 콘솔입니다.
+            </p>
+        </div>
+        <div class="hero-panel">
+            <p class="hero-panel-label">사전 준비</p>
+            <ol>
+                <li>먼저 <strong>ADMIN Access Token</strong>을 준비해 아래 입력창에 저장합니다.</li>
+                <li>공연장을 upsert 한 뒤 좌석/구역 기준정보를 등록합니다.</li>
+                <li>등록 후 <strong>조회 버튼</strong>으로 seatId / sectionId를 확인합니다.</li>
+                <li>이벤트와 회차를 만든 다음 회차 인벤토리를 생성합니다.</li>
+                <li>마지막에 <strong>가용성 페이지 열기</strong>로 공개 조회 결과를 바로 확인합니다.</li>
+            </ol>
+        </div>
+    </header>
+
+    <section class="flow-strip" aria-label="Admin endpoints overview">
+        <article class="flow-item"><p>ADM-001</p><h2>Venue Upsert</h2><span>POST /api/admin/venues/upsert</span></article>
+        <article class="flow-item"><p>ADM-008</p><h2>Seats Lookup</h2><span>GET /api/admin/venues/{venueId}/seats</span></article>
+        <article class="flow-item"><p>ADM-002</p><h2>Create Seats</h2><span>POST /api/admin/venues/{venueId}/seats</span></article>
+        <article class="flow-item"><p>ADM-009</p><h2>Sections Lookup</h2><span>GET /api/admin/venues/{venueId}/sections</span></article>
+        <article class="flow-item"><p>ADM-003</p><h2>Create Sections</h2><span>POST /api/admin/venues/{venueId}/sections</span></article>
+        <article class="flow-item"><p>ADM-004</p><h2>Create Event</h2><span>POST /api/admin/events</span></article>
+        <article class="flow-item"><p>ADM-005</p><h2>Create Show</h2><span>POST /api/admin/shows</span></article>
+        <article class="flow-item flow-item-accent"><p>ADM-006/007</p><h2>Create Inventory</h2><span>POST /api/admin/shows/{showId}/...</span></article>
+    </section>
+
+    <section class="workspace">
+        <div class="main-column">
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 0</p>
+                        <h2>ADMIN 토큰</h2>
+                    </div>
+                    <p class="section-copy">현재 시스템에는 관리자 회원가입 API가 없으므로, 발급된 access token을 먼저 넣어야 합니다.</p>
+                </div>
+
+                <div class="form-grid">
+                    <label>
+                        <span>Access Token</span>
+                        <textarea id="access-token-input" rows="4" placeholder="Bearer 없이 access token 본문만 입력"></textarea>
+                    </label>
+                </div>
+
+                <div class="utility-inline">
+                    <button id="save-token-button" type="button" class="button button-dark">토큰 저장</button>
+                    <span id="api-base-badge" class="pill"></span>
+                </div>
+            </section>
+
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 1</p>
+                        <h2>공연장과 기준정보</h2>
+                    </div>
+                    <p class="section-copy">공연장을 만든 뒤 좌석/구역 기준정보를 등록하고, 바로 조회해 ID를 확인합니다.</p>
+                </div>
+
+                <div class="form-grid two-col">
+                    <label>
+                        <span>Venue Code</span>
+                        <input id="venue-code-input" type="text" value="SEOUL-HALL" />
+                    </label>
+                    <label>
+                        <span>Venue Name</span>
+                        <input id="venue-name-input" type="text" value="서울 공연장" />
+                    </label>
+                </div>
+                <div class="form-grid">
+                    <label>
+                        <span>Address</span>
+                        <input id="venue-address-input" type="text" value="서울시 강남구 테헤란로 123" />
+                    </label>
+                </div>
+                <div class="action-grid three-up compact-grid">
+                    <button id="upsert-venue-button" type="button" class="button button-primary">
+                        <span class="button-code">ADM-001</span>
+                        <strong>공연장 Upsert</strong>
+                    </button>
+                    <label class="inline-label">
+                        <span>Venue ID</span>
+                        <input id="reference-venue-id-input" type="number" min="1" placeholder="upsert 결과 자동 입력" />
+                    </label>
+                    <div class="mini-note">seat / section 생성과 조회에 공통으로 사용합니다.</div>
+                </div>
+
+                <div class="split-panel">
+                    <article class="sub-card">
+                        <div class="sub-head">
+                            <h3>좌석 기준정보</h3>
+                            <button id="load-seats-button" type="button" class="button button-inline">좌석 조회</button>
+                        </div>
+                        <label>
+                            <span>Seats JSON</span>
+                            <textarea id="seat-items-input" rows="8"></textarea>
+                        </label>
+                        <button id="create-seats-button" type="button" class="button button-secondary">
+                            <span class="button-code">ADM-002</span>
+                            <strong>좌석 등록</strong>
+                        </button>
+                    </article>
+
+                    <article class="sub-card">
+                        <div class="sub-head">
+                            <h3>구역 기준정보</h3>
+                            <button id="load-sections-button" type="button" class="button button-inline">구역 조회</button>
+                        </div>
+                        <label>
+                            <span>Sections JSON</span>
+                            <textarea id="section-items-input" rows="8"></textarea>
+                        </label>
+                        <button id="create-sections-button" type="button" class="button button-accent">
+                            <span class="button-code">ADM-003</span>
+                            <strong>구역 등록</strong>
+                        </button>
+                    </article>
+                </div>
+            </section>
+
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 2</p>
+                        <h2>이벤트와 회차</h2>
+                    </div>
+                    <p class="section-copy">생성 응답으로 받은 eventId, showId를 아래 단계에 그대로 이어서 사용합니다.</p>
+                </div>
+
+                <div class="split-panel split-panel-tight">
+                    <article class="sub-card">
+                        <div class="sub-head"><h3>이벤트 생성</h3></div>
+                        <div class="form-grid two-col">
+                            <label>
+                                <span>Title</span>
+                                <input id="event-title-input" type="text" value="봄 시즌 콘서트" />
+                            </label>
+                            <label>
+                                <span>Status</span>
+                                <select id="event-status-input">
+                                    <option value="DRAFT">DRAFT</option>
+                                    <option value="PUBLISHED" selected>PUBLISHED</option>
+                                    <option value="CANCELLED">CANCELLED</option>
+                                </select>
+                            </label>
+                        </div>
+                        <label>
+                            <span>Description</span>
+                            <textarea id="event-desc-input" rows="4">관리자 테스트 콘솔에서 생성한 이벤트입니다.</textarea>
+                        </label>
+                        <button id="create-event-button" type="button" class="button button-primary">
+                            <span class="button-code">ADM-004</span>
+                            <strong>이벤트 생성</strong>
+                        </button>
+                    </article>
+
+                    <article class="sub-card">
+                        <div class="sub-head"><h3>회차 생성</h3></div>
+                        <div class="form-grid two-col">
+                            <label>
+                                <span>Event ID</span>
+                                <input id="show-event-id-input" type="number" min="1" placeholder="이벤트 생성 결과 자동 입력" />
+                            </label>
+                            <label>
+                                <span>Venue ID</span>
+                                <input id="show-venue-id-input" type="number" min="1" placeholder="공연장 ID 자동 입력" />
+                            </label>
+                        </div>
+                        <label>
+                            <span>Start At</span>
+                            <input id="show-start-at-input" type="datetime-local" />
+                        </label>
+                        <button id="create-show-button" type="button" class="button button-dark">
+                            <span class="button-code">ADM-005</span>
+                            <strong>회차 생성</strong>
+                        </button>
+                    </article>
+                </div>
+            </section>
+
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 3</p>
+                        <h2>회차 판매 인벤토리</h2>
+                    </div>
+                    <p class="section-copy">조회한 seatId / sectionId를 사용해 회차별 판매 좌석과 구역 재고를 생성합니다.</p>
+                </div>
+
+                <div class="action-grid two-up compact-grid inventory-meta">
+                    <label class="inline-label">
+                        <span>Show ID</span>
+                        <input id="inventory-show-id-input" type="number" min="1" placeholder="회차 생성 결과 자동 입력" />
+                    </label>
+                    <button id="open-availability-button" type="button" class="button button-inline button-inline-strong">가용성 페이지 열기</button>
+                </div>
+
+                <div class="split-panel">
+                    <article class="sub-card">
+                        <div class="sub-head"><h3>좌석 판매 정보</h3></div>
+                        <label>
+                            <span>Show Seats JSON</span>
+                            <textarea id="show-seat-items-input" rows="8"></textarea>
+                        </label>
+                        <button id="create-show-seats-button" type="button" class="button button-secondary">
+                            <span class="button-code">ADM-006</span>
+                            <strong>회차 좌석 생성</strong>
+                        </button>
+                    </article>
+
+                    <article class="sub-card">
+                        <div class="sub-head"><h3>구역 재고 정보</h3></div>
+                        <label>
+                            <span>Section Inventories JSON</span>
+                            <textarea id="section-inventory-items-input" rows="8"></textarea>
+                        </label>
+                        <button id="create-section-inventories-button" type="button" class="button button-accent">
+                            <span class="button-code">ADM-007</span>
+                            <strong>구역 재고 생성</strong>
+                        </button>
+                    </article>
+                </div>
+            </section>
+        </div>
+
+        <aside class="side-column">
+            <section class="card state-card sticky-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">STATE</p>
+                        <h2>작업 상태</h2>
+                    </div>
+                    <span id="console-status" class="status idle">READY</span>
+                </div>
+
+                <div class="state-grid">
+                    <article>
+                        <span class="field-label">Venue ID</span>
+                        <strong id="state-venue-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Event ID</span>
+                        <strong id="state-event-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Show ID</span>
+                        <strong id="state-show-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Loaded Seats</span>
+                        <strong id="state-seat-count">0</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Loaded Sections</span>
+                        <strong id="state-section-count">0</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Token</span>
+                        <strong id="state-token-status">EMPTY</strong>
+                    </article>
+                </div>
+
+                <label>
+                    <span class="field-label">Saved Access Token</span>
+                    <textarea id="state-access-token" rows="5" readonly></textarea>
+                </label>
+
+                <div class="utility-stack">
+                    <button id="clear-state-button" type="button" class="button button-inline">로컬 상태 초기화</button>
+                    <p>브라우저에 저장된 어드민 토큰과 최근 ID, 조회 결과를 함께 비웁니다.</p>
+                </div>
+            </section>
+
+            <section class="card inventory-card-panel">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">REFERENCE</p>
+                        <h2>좌석 목록</h2>
+                    </div>
+                    <span id="seats-summary-badge" class="status idle">NO DATA</span>
+                </div>
+                <div id="seat-list-view" class="inventory-list"></div>
+            </section>
+
+            <section class="card inventory-card-panel">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">REFERENCE</p>
+                        <h2>구역 목록</h2>
+                    </div>
+                    <span id="sections-summary-badge" class="status idle">NO DATA</span>
+                </div>
+                <div id="section-list-view" class="inventory-list"></div>
+            </section>
+
+            <section class="card response-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">RESPONSE</p>
+                        <h2>최근 응답</h2>
+                    </div>
+                    <button id="clear-log-button" type="button" class="button button-inline">로그 지우기</button>
+                </div>
+                <div class="response-meta">
+                    <div>
+                        <span class="meta-label">Action</span>
+                        <strong id="last-action">Ready</strong>
+                    </div>
+                    <div>
+                        <span class="meta-label">Status</span>
+                        <strong id="last-status">No request yet</strong>
+                    </div>
+                </div>
+                <pre id="result-view">{
+  "ready": true,
+  "message": "Admin API Test Console loaded"
+}</pre>
+            </section>
+        </aside>
+    </section>
+</main>
+<script src="/js/admin-test.js"></script>
+</body>
+</html>

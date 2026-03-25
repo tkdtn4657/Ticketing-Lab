@@ -36,10 +36,18 @@ public class User {
     private LocalDateTime createdAt;
 
     public static User createUser(String email, String passwordHash) {
+        return create(email, passwordHash, "USER");
+    }
+
+    public static User createAdmin(String email, String passwordHash) {
+        return create(email, passwordHash, "ADMIN");
+    }
+
+    private static User create(String email, String passwordHash, String role) {
         return User.builder()
                 .email(email)
                 .passwordHash(passwordHash)
-                .role("USER")
+                .role(role)
                 .createdAt(LocalDateTime.now())
                 .build();
     }

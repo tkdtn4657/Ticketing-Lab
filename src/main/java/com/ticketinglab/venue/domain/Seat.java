@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,7 +17,13 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "seats")
+@Table(
+        name = "seats",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_seats_venue_label",
+                columnNames = {"venue_id", "label"}
+        )
+)
 public class Seat {
 
     @Id

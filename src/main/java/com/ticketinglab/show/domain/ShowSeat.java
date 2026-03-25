@@ -55,6 +55,10 @@ public class ShowSeat {
                 .build();
     }
 
+    public static ShowSeat createAvailable(Show show, Seat seat, int price) {
+        return create(show, seat, price, ShowSeatStatus.AVAILABLE);
+    }
+
     public boolean isAvailable() {
         return status == ShowSeatStatus.AVAILABLE;
     }

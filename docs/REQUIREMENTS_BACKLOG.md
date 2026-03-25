@@ -15,7 +15,7 @@
 | Auth | REQ-AUTH-003 | JWT 인증 필터 | Bearer 토큰 검증 및 SecurityContext 세팅 | P0 | 구현완료 | |
 | Auth | REQ-AUTH-004 | Refresh 재발급 | refresh로 access 재발급, 토큰 회전 처리 | P0 | 구현완료 | rotation |
 | Auth | REQ-AUTH-005 | 로그아웃 | refresh 토큰 무효 처리 | P1 | 구현완료 | DB revoke |
-| Auth | REQ-AUTH-006 | 권한 분리 | USER/ADMIN API 접근 제어 | P0 | 예정 | ADMIN API 구현 후 구체화 |
+| Auth | REQ-AUTH-006 | 권한 분리 | USER/ADMIN API 접근 제어 | P0 | 구현완료 | `/api/admin/**`, `/api/checkin` ADMIN 제한 |
 | OAuth2 | REQ-OAUTH-001 | OAuth2 로그인 시작 | provider별 authorize redirect 제공 | P0 | 예정 | Google/Kakao |
 | OAuth2 | REQ-OAUTH-002 | OAuth2 콜백 처리 | code 교환, 사용자 조회/생성, JWT 발급 | P0 | 예정 | |
 | OAuth2 | REQ-OAUTH-003 | 계정 연결 | 로그인 상태에서 소셜 계정 연결/해제 | P1 | 예정 | optional |
@@ -31,7 +31,8 @@
 | Payment | REQ-PAY-002 | 결제 승인 처리 | 승인 후 PAID 전환 및 티켓 발급 | P0 | 예정 | |
 | Ticket | REQ-TKT-001 | 티켓 발급 | 결제 성공 후 ticket 생성 | P0 | 예정 | |
 | Checkin | REQ-CHK-001 | 체크인 | `qrToken` 검증 및 USED 처리 | P1 | 예정 | ADMIN |
-| Admin | REQ-ADM-001 | Venue 등록/수정 | code 기반 upsert, venueId 반환 | P0 | 예정 | |
-| Admin | REQ-ADM-002 | 공연장 좌석/구역 기준정보 등록 | venue 기준 `seats`, `sections`를 생성한다 | P0 | 예정 | SHW-001 선행 |
-| Admin | REQ-ADM-003 | 회차 판매 인벤토리 생성 | show 기준 `show_seats`, `show_section_inventories`를 생성한다 | P0 | 예정 | SHW-001 선행 |
-| Admin | REQ-ADM-004 | 이벤트/회차/판매단위 관리 | 이벤트, 회차, 좌석판매, 구역재고 생성 | P0 | 예정 | |
+| Admin | REQ-ADM-001 | Venue 등록/수정 | code 기반 upsert, venueId 반환 | P0 | 구현완료 | |
+| Admin | REQ-ADM-002 | 공연장 좌석/구역 기준정보 등록 | venue 기준 `seats`, `sections`를 생성한다 | P0 | 구현완료 | SHW-001 선행 |
+| Admin | REQ-ADM-003 | 회차 판매 인벤토리 생성 | show 기준 `show_seats`, `show_section_inventories`를 생성한다 | P0 | 구현완료 | SHW-001 선행 |
+| Admin | REQ-ADM-004 | 이벤트/회차/판매단위 관리 | 이벤트, 회차, 좌석판매, 구역재고 생성 | P0 | 구현완료 | |
+| Admin | REQ-ADM-005 | 공연장 기준정보 조회 | venue 기준 `seats`, `sections`를 조회해 seatId/sectionId를 확인한다 | P1 | 구현완료 | admin console 지원 |

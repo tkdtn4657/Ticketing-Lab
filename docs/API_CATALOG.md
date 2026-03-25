@@ -28,10 +28,12 @@
 | Payments | PAY-001 | POST | `/api/payments/confirm` | USER | 결제 승인 및 멱등 처리 | `reservationId`, `amount` | `paymentId`, `status` | P0 | 예정 |
 | Tickets | TKT-001 | GET | `/api/me/tickets` | USER | 내 티켓 목록 조회 | `page`, `size` | `paged tickets` | P1 | 예정 |
 | Checkin | CHK-001 | POST | `/api/checkin` | ADMIN | 체크인 처리 | `qrToken` | `USED` | P1 | 예정 |
-| Admin | ADM-001 | POST | `/api/admin/venues/upsert` | ADMIN | 공연장 등록/수정 | `code`, `name`, `address` | `venueId` | P0 | 예정 |
-| Admin | ADM-002 | POST | `/api/admin/venues/{venueId}/seats` | ADMIN | 공연장 좌석 기준정보 등록 | `seats[]` | `createdCount` | P0 | 예정 |
-| Admin | ADM-003 | POST | `/api/admin/venues/{venueId}/sections` | ADMIN | 공연장 구역 기준정보 등록 | `sections[]` | `createdCount` | P0 | 예정 |
-| Admin | ADM-004 | POST | `/api/admin/events` | ADMIN | 이벤트 생성 | `title`, `desc`, `status` | `eventId` | P0 | 예정 |
-| Admin | ADM-005 | POST | `/api/admin/shows` | ADMIN | 회차 생성 | `eventId`, `venueId`, `startAt` | `showId` | P0 | 예정 |
-| Admin | ADM-006 | POST | `/api/admin/shows/{showId}/show-seats` | ADMIN | 회차 좌석 판매 정보 생성 | `items[seatId,price]` | `createdCount` | P0 | 예정 |
-| Admin | ADM-007 | POST | `/api/admin/shows/{showId}/section-inventories` | ADMIN | 회차 구역 재고 생성 | `items[sectionId,price,capacity]` | `createdCount` | P0 | 예정 |
+| Admin | ADM-001 | POST | `/api/admin/venues/upsert` | ADMIN | 공연장 등록/수정 | `code`, `name`, `address` | `venueId` | P0 | 구현완료 |
+| Admin | ADM-002 | POST | `/api/admin/venues/{venueId}/seats` | ADMIN | 공연장 좌석 기준정보 등록 | `seats[]` | `createdCount` | P0 | 구현완료 |
+| Admin | ADM-008 | GET | `/api/admin/venues/{venueId}/seats` | ADMIN | 공연장 좌석 기준정보 조회 | - | `seats[seatId,label,rowNo,colNo]` | P1 | 구현완료 |
+| Admin | ADM-003 | POST | `/api/admin/venues/{venueId}/sections` | ADMIN | 공연장 구역 기준정보 등록 | `sections[]` | `createdCount` | P0 | 구현완료 |
+| Admin | ADM-009 | GET | `/api/admin/venues/{venueId}/sections` | ADMIN | 공연장 구역 기준정보 조회 | - | `sections[sectionId,name]` | P1 | 구현완료 |
+| Admin | ADM-004 | POST | `/api/admin/events` | ADMIN | 이벤트 생성 | `title`, `desc`, `status` | `eventId` | P0 | 구현완료 |
+| Admin | ADM-005 | POST | `/api/admin/shows` | ADMIN | 회차 생성 | `eventId`, `venueId`, `startAt` | `showId` | P0 | 구현완료 |
+| Admin | ADM-006 | POST | `/api/admin/shows/{showId}/show-seats` | ADMIN | 회차 좌석 판매 정보 생성 | `items[seatId,price]` | `createdCount` | P0 | 구현완료 |
+| Admin | ADM-007 | POST | `/api/admin/shows/{showId}/section-inventories` | ADMIN | 회차 구역 재고 생성 | `items[sectionId,price,capacity]` | `createdCount` | P0 | 구현완료 |
