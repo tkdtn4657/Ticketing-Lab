@@ -39,4 +39,9 @@ public class ShowSeatRepositoryAdapter implements ShowSeatRepository {
     public List<ShowSeat> findAllByShowIdAndSeatIdIn(Long showId, Collection<Long> seatIds) {
         return jpaRepository.findAllByShow_IdAndSeat_IdIn(showId, seatIds);
     }
+
+    @Override
+    public List<ShowSeat> findAllByShowIdAndSeatIdInForUpdate(Long showId, Collection<Long> seatIds) {
+        return jpaRepository.findAllByShowIdAndSeatIdInForUpdate(showId, seatIds);
+    }
 }

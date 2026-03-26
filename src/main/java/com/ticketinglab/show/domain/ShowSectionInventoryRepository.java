@@ -9,4 +9,5 @@ public interface ShowSectionInventoryRepository {
     boolean existsAny();
     List<ShowSectionInventory> findAllByShowId(Long showId);
     List<ShowSectionInventory> findAllByShowIdAndSectionIdIn(Long showId, Collection<Long> sectionIds);
+    List<ShowSectionInventory> findAllByShowIdAndSectionIdInForUpdate(Long showId, Collection<Long> sectionIds);
 }

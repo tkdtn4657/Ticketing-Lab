@@ -77,7 +77,7 @@ public class SecurityConfig {
                 "http://localhost:63342",
                 "http://127.0.0.1:63342"
         ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(false);
 
@@ -87,6 +87,8 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/api/events/**", configuration);
         source.registerCorsConfiguration("/api/shows", configuration);
         source.registerCorsConfiguration("/api/shows/**", configuration);
+        source.registerCorsConfiguration("/api/holds", configuration);
+        source.registerCorsConfiguration("/api/holds/**", configuration);
         source.registerCorsConfiguration("/api/admin/**", configuration);
         source.registerCorsConfiguration("/api/checkin", configuration);
         return source;

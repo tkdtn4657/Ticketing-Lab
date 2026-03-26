@@ -21,10 +21,10 @@
 | OAuth2 | REQ-OAUTH-003 | 계정 연결 | 로그인 상태에서 소셜 계정 연결/해제 | P1 | 예정 | optional |
 | View | REQ-VIEW-001 | 이벤트 목록/상세 조회 | 이벤트 목록/상세와 회차 조회 제공 | P0 | 구현완료 | EVT-001, EVT-002 |
 | View | REQ-VIEW-002 | 회차 가용성 조회 | 좌석 available, 구역 remainingQty 제공 | P0 | 구현완료 | SHW-001 |
-| Hold | REQ-HOLD-001 | 홀드 생성 | show 기준 좌석/구역 홀드 생성 | P0 | 예정 | 좌석 중복 여부 결정 필요 |
-| Hold | REQ-HOLD-002 | Hold TTL 만료 | 5분 TTL, 만료 자동 해제 | P0 | 예정 | scheduler/batch |
-| Hold | REQ-HOLD-003 | 동시성 안전성 | 좌석 중복 홀드 불가, 구역 잔여 수량 보호 | P0 | 예정 | 락 전략 필요 |
-| Hold | REQ-HOLD-004 | 홀드 조회/취소 | 본인 hold 조회 및 취소 | P0 | 예정 | |
+| Hold | REQ-HOLD-001 | 홀드 생성 | show 기준 좌석/구역 홀드 생성 | P0 | 구현완료 | 좌석/구역 혼합 items 지원 |
+| Hold | REQ-HOLD-002 | Hold TTL 만료 | 5분 TTL, 만료 자동 해제 | P0 | 진행중 | create/get/delete 시 lazy release, scheduler 미구현 |
+| Hold | REQ-HOLD-003 | 동시성 안전성 | 좌석 중복 홀드 불가, 구역 잔여 수량 보호 | P0 | 진행중 | 요청 자원 기준 row lock 적용 |
+| Hold | REQ-HOLD-004 | 홀드 조회/취소 | 본인 hold 조회 및 취소 | P0 | 구현완료 | 만료 조회 시 EXPIRED 반영 |
 | Reservation | REQ-RES-001 | 예약 생성 | hold_items를 reservation_items로 복사 | P0 | 예정 | |
 | Reservation | REQ-RES-002 | 예약 상태 관리 | `PENDING_PAYMENT -> PAID`, 만료/취소 포함 | P0 | 예정 | |
 | Payment | REQ-PAY-001 | 결제 멱등성 | `Idempotency-Key` 지원 | P0 | 예정 | |

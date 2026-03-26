@@ -19,9 +19,9 @@
 | Events | EVT-001 | GET | `/api/events` | 없음 | 이벤트 목록 조회 | `status?` | `events[]` | P0 | 구현완료 |
 | Events | EVT-002 | GET | `/api/events/{eventId}` | 없음 | 이벤트 상세 및 회차 조회 | - | `event`, `shows[]` | P0 | 구현완료 |
 | Shows | SHW-001 | GET | `/api/shows/{showId}/availability` | 없음 | 좌석/구역 가용성 조회 | - | `seats[seatId,label,rowNo,colNo,price,available]`, `sections[sectionId,name,price,remainingQty]` | P0 | 구현완료 |
-| Holds | HLD-001 | POST | `/api/holds` | USER | 홀드 생성 | `showId`, `items[]` | `holdId`, `expiresAt` | P0 | 예정 |
-| Holds | HLD-002 | GET | `/api/holds/{holdId}` | USER | 홀드 조회 | - | `hold`, `items` | P0 | 예정 |
-| Holds | HLD-003 | DELETE | `/api/holds/{holdId}` | USER | 홀드 취소 | - | `204` | P0 | 예정 |
+| Holds | HLD-001 | POST | `/api/holds` | USER | 홀드 생성 | `showId`, `items[seatId?,sectionId?,qty?]` | `holdId`, `expiresAt` | P0 | 구현완료 |
+| Holds | HLD-002 | GET | `/api/holds/{holdId}` | USER | 홀드 조회 | - | `hold[holdId,showId,status,expiresAt,createdAt]`, `items[type,seatId,sectionId,qty,unitPrice]` | P0 | 구현완료 |
+| Holds | HLD-003 | DELETE | `/api/holds/{holdId}` | USER | 홀드 취소 | - | `204` | P0 | 구현완료 |
 | Reservations | RES-001 | POST | `/api/reservations` | USER | 예약 생성 | `holdId` | `reservationId`, `status` | P0 | 예정 |
 | Reservations | RES-002 | GET | `/api/reservations/{reservationId}` | USER | 예약 상세 조회 | - | `reservation`, `items` | P1 | 예정 |
 | Reservations | RES-003 | GET | `/api/me/reservations` | USER | 내 예약 목록 조회 | `page`, `size`, `status?` | `paged list` | P1 | 예정 |

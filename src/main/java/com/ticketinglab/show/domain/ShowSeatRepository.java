@@ -9,4 +9,5 @@ public interface ShowSeatRepository {
     boolean existsAny();
     List<ShowSeat> findAllByShowId(Long showId);
     List<ShowSeat> findAllByShowIdAndSeatIdIn(Long showId, Collection<Long> seatIds);
+    List<ShowSeat> findAllByShowIdAndSeatIdInForUpdate(Long showId, Collection<Long> seatIds);
 }

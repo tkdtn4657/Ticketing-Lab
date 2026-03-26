@@ -39,4 +39,12 @@ public class ShowSectionInventoryRepositoryAdapter implements ShowSectionInvento
     public List<ShowSectionInventory> findAllByShowIdAndSectionIdIn(Long showId, Collection<Long> sectionIds) {
         return jpaRepository.findAllByShow_IdAndSection_IdIn(showId, sectionIds);
     }
+
+    @Override
+    public List<ShowSectionInventory> findAllByShowIdAndSectionIdInForUpdate(
+            Long showId,
+            Collection<Long> sectionIds
+    ) {
+        return jpaRepository.findAllByShowIdAndSectionIdInForUpdate(showId, sectionIds);
+    }
 }

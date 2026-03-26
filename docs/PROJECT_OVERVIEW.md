@@ -72,6 +72,9 @@
 - `POST /api/holds`
 - `GET /api/holds/{holdId}`
 - `DELETE /api/holds/{holdId}`
+- 요청 아이템은 `seatId` 또는 `sectionId` 중 하나를 가진다.
+- 좌석 홀드는 `qty=1` 고정이며, 구역 홀드는 `qty`를 반드시 전달한다.
+- Hold TTL은 5분이며, 생성/조회/취소 시점에 만료된 hold를 자동 해제한다.
 
 ### Reservation
 - `POST /api/reservations`

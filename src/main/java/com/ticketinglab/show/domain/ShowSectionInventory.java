@@ -75,6 +75,26 @@ public class ShowSectionInventory {
         return Math.max(capacity - soldQty - holdQty, 0);
     }
 
+    public void hold(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("quantity must be positive");
+        }
+        if (remainingQuantity() < quantity) {
+            throw new IllegalStateException("section quantity not enough");
+        }
+        this.holdQty += quantity;
+    }
+
+    public void releaseHold(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("quantity must be positive");
+        }
+        if (holdQty < quantity) {
+            throw new IllegalStateException("section hold quantity underflow");
+        }
+        this.holdQty -= quantity;
+    }
+
     @Builder
     public ShowSectionInventory(
             Show show,

@@ -63,6 +63,19 @@ public class ShowSeat {
         return status == ShowSeatStatus.AVAILABLE;
     }
 
+    public void hold() {
+        if (!isAvailable()) {
+            throw new IllegalStateException("seat not available");
+        }
+        this.status = ShowSeatStatus.HELD;
+    }
+
+    public void releaseHold() {
+        if (status == ShowSeatStatus.HELD) {
+            this.status = ShowSeatStatus.AVAILABLE;
+        }
+    }
+
     @Builder
     public ShowSeat(
             Show show,
