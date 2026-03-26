@@ -65,6 +65,10 @@ public class Show {
                 .build();
     }
 
+    public boolean isHeldAt(Long venueId) {
+        return this.venueId.equals(venueId);
+    }
+
     @Builder
     public Show(
             Long id,

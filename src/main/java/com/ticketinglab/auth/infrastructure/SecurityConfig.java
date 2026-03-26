@@ -58,6 +58,8 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/refresh"
                         ).permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/checkin").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
@@ -75,15 +77,18 @@ public class SecurityConfig {
                 "http://localhost:63342",
                 "http://127.0.0.1:63342"
         ));
-        configuration.setAllowedMethods(List.of("GET"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/auth/**", configuration);
         source.registerCorsConfiguration("/api/events", configuration);
         source.registerCorsConfiguration("/api/events/**", configuration);
         source.registerCorsConfiguration("/api/shows", configuration);
         source.registerCorsConfiguration("/api/shows/**", configuration);
+        source.registerCorsConfiguration("/api/admin/**", configuration);
+        source.registerCorsConfiguration("/api/checkin", configuration);
         return source;
     }
 

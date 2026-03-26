@@ -1,0 +1,74 @@
+package com.ticketinglab.venue.domain;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "venues")
+public class Venue {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "code", nullable = false, length = 50, unique = true)
+    private String code;
+
+    @Column(name = "name", nullable = false, length = 200)
+    private String name;
+
+    @Column(name = "address", length = 300)
+    private String address;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    public static Venue create(String code, String name, String address) {
+        LocalDateTime now = LocalDateTime.now();
+        return Venue.builder()
+                .code(code)
+                .name(name)
+                .address(address)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+    }
+
+    public void updateInfo(String name, String address) {
+        this.name = name;
+        this.address = address;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @Builder
+    public Venue(
+            Long id,
+            String code,
+            String name,
+            String address,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt
+    ) {
+        this.id = id;
+        this.code = code;
+        this.name = name;
+        this.address = address;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+}

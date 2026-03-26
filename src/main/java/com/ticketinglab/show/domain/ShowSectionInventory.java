@@ -67,6 +67,10 @@ public class ShowSectionInventory {
                 .build();
     }
 
+    public static ShowSectionInventory open(Show show, Section section, int price, int capacity) {
+        return create(show, section, price, capacity, 0, 0);
+    }
+
     public int remainingQuantity() {
         return Math.max(capacity - soldQty - holdQty, 0);
     }

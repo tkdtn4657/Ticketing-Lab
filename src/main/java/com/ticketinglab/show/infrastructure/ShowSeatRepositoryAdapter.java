@@ -6,6 +6,7 @@ import com.ticketinglab.show.infrastructure.jpa.ShowSeatJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -20,6 +21,11 @@ public class ShowSeatRepositoryAdapter implements ShowSeatRepository {
     }
 
     @Override
+    public List<ShowSeat> saveAll(List<ShowSeat> showSeats) {
+        return jpaRepository.saveAll(showSeats);
+    }
+
+    @Override
     public boolean existsAny() {
         return jpaRepository.count() > 0;
     }
@@ -27,5 +33,10 @@ public class ShowSeatRepositoryAdapter implements ShowSeatRepository {
     @Override
     public List<ShowSeat> findAllByShowId(Long showId) {
         return jpaRepository.findAllByShow_Id(showId);
+    }
+
+    @Override
+    public List<ShowSeat> findAllByShowIdAndSeatIdIn(Long showId, Collection<Long> seatIds) {
+        return jpaRepository.findAllByShow_IdAndSeat_IdIn(showId, seatIds);
     }
 }

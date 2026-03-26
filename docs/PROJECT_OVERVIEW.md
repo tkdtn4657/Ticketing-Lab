@@ -45,10 +45,11 @@
 1. `Venue`를 생성하거나 수정한다.
 2. 공연장 기준 좌석은 `POST /api/admin/venues/{venueId}/seats`로 등록한다.
 3. 공연장 기준 구역은 `POST /api/admin/venues/{venueId}/sections`로 등록한다.
-4. `Event`를 생성하고, 그 아래에 `Show`를 생성한다.
-5. 회차별 판매 좌석은 `POST /api/admin/shows/{showId}/show-seats`로 생성한다.
-6. 회차별 구역 재고는 `POST /api/admin/shows/{showId}/section-inventories`로 생성한다.
-7. `GET /api/shows/{showId}/availability`는 위에서 생성된 `show_seats`, `show_section_inventories`를 읽는다.
+4. 필요하면 `GET /api/admin/venues/{venueId}/seats`, `GET /api/admin/venues/{venueId}/sections`로 기준정보 ID를 확인한다.
+5. `Event`를 생성하고, 그 아래에 `Show`를 생성한다.
+6. 회차별 판매 좌석은 `POST /api/admin/shows/{showId}/show-seats`로 생성한다.
+7. 회차별 구역 재고는 `POST /api/admin/shows/{showId}/section-inventories`로 생성한다.
+8. `GET /api/shows/{showId}/availability`는 위에서 생성된 `show_seats`, `show_section_inventories`를 읽는다.
 
 ### 좌석 데이터 관점 정리
 - `seats`, `sections`는 공연장 기준정보다.
@@ -87,7 +88,9 @@
 ### Admin
 - `POST /api/admin/venues/upsert`
 - `POST /api/admin/venues/{venueId}/seats`
+- `GET /api/admin/venues/{venueId}/seats`
 - `POST /api/admin/venues/{venueId}/sections`
+- `GET /api/admin/venues/{venueId}/sections`
 - `POST /api/admin/events`
 - `POST /api/admin/shows`
 - `POST /api/admin/shows/{showId}/show-seats`
