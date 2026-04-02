@@ -80,6 +80,8 @@
 - `POST /api/reservations`
 - `GET /api/reservations/{reservationId}`
 - `GET /api/me/reservations`
+- 예약 생성 시 hold는 `CONVERTED`로 바뀌고, 좌석은 `RESERVED`, 구역 수량은 기존 `hold_qty`를 유지한다.
+- Reservation TTL은 15분이며, 생성/상세/목록/새 hold 생성 시점에 만료된 reservation을 lazy release 한다.
 
 ### Payment
 - `POST /api/payments/confirm` with `Idempotency-Key`

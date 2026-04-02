@@ -62,6 +62,7 @@ const dom = {
     createSectionInventoriesButton: document.getElementById("create-section-inventories-button"),
     openAvailabilityButton: document.getElementById("open-availability-button"),
     openHoldsButton: document.getElementById("open-holds-button"),
+    openReservationsButton: document.getElementById("open-reservations-button"),
     clearStateButton: document.getElementById("clear-state-button"),
     clearLogButton: document.getElementById("clear-log-button"),
     consoleStatus: document.getElementById("console-status"),
@@ -588,6 +589,15 @@ dom.openHoldsButton.addEventListener("click", () => {
     }
 
     window.open(buildEndpoint(`/holds-test.html?showId=${showId}`), "_blank", "noopener,noreferrer");
+});
+
+dom.openReservationsButton.addEventListener("click", () => {
+    const showId = readPositiveNumber(dom.inventoryShowIdInput, "Show ID");
+    if (!showId) {
+        return;
+    }
+
+    window.open(buildEndpoint(`/reservations-test.html?showId=${showId}`), "_blank", "noopener,noreferrer");
 });
 dom.clearStateButton.addEventListener("click", resetState);
 

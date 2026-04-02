@@ -28,6 +28,11 @@ public class HoldRepositoryAdapter implements HoldRepository {
     }
 
     @Override
+    public Optional<Hold> findByIdForUpdate(String holdId) {
+        return jpaRepository.findLockedById(holdId);
+    }
+
+    @Override
     public List<Hold> findAllActiveExpiredByShowIdAndSeatIdIn(
             Long showId,
             Collection<Long> seatIds,

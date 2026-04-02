@@ -76,6 +76,19 @@ public class ShowSeat {
         }
     }
 
+    public void reserve() {
+        if (status != ShowSeatStatus.HELD) {
+            throw new IllegalStateException("seat not held");
+        }
+        this.status = ShowSeatStatus.RESERVED;
+    }
+
+    public void releaseReservation() {
+        if (status == ShowSeatStatus.RESERVED || status == ShowSeatStatus.HELD) {
+            this.status = ShowSeatStatus.AVAILABLE;
+        }
+    }
+
     @Builder
     public ShowSeat(
             Show show,

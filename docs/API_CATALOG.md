@@ -22,9 +22,9 @@
 | Holds | HLD-001 | POST | `/api/holds` | USER | 홀드 생성 | `showId`, `items[seatId?,sectionId?,qty?]` | `holdId`, `expiresAt` | P0 | 구현완료 |
 | Holds | HLD-002 | GET | `/api/holds/{holdId}` | USER | 홀드 조회 | - | `hold[holdId,showId,status,expiresAt,createdAt]`, `items[type,seatId,sectionId,qty,unitPrice]` | P0 | 구현완료 |
 | Holds | HLD-003 | DELETE | `/api/holds/{holdId}` | USER | 홀드 취소 | - | `204` | P0 | 구현완료 |
-| Reservations | RES-001 | POST | `/api/reservations` | USER | 예약 생성 | `holdId` | `reservationId`, `status` | P0 | 예정 |
-| Reservations | RES-002 | GET | `/api/reservations/{reservationId}` | USER | 예약 상세 조회 | - | `reservation`, `items` | P1 | 예정 |
-| Reservations | RES-003 | GET | `/api/me/reservations` | USER | 내 예약 목록 조회 | `page`, `size`, `status?` | `paged list` | P1 | 예정 |
+| Reservations | RES-001 | POST | `/api/reservations` | USER | 홀드를 결제 대기 예약으로 전환 | `holdId` | `reservationId`, `status` | P0 | 구현완료 |
+| Reservations | RES-002 | GET | `/api/reservations/{reservationId}` | USER | 예약 상세 조회 | - | `reservation[reservationId,showId,status,totalAmount,expiresAt,createdAt]`, `items[type,seatId,sectionId,qty,unitPrice]` | P1 | 구현완료 |
+| Reservations | RES-003 | GET | `/api/me/reservations` | USER | 내 예약 목록 조회 | `page`, `size`, `status?` | `page,size,totalElements,totalPages,reservations[]` | P1 | 구현완료 |
 | Payments | PAY-001 | POST | `/api/payments/confirm` | USER | 결제 승인 및 멱등 처리 | `reservationId`, `amount` | `paymentId`, `status` | P0 | 예정 |
 | Tickets | TKT-001 | GET | `/api/me/tickets` | USER | 내 티켓 목록 조회 | `page`, `size` | `paged tickets` | P1 | 예정 |
 | Checkin | CHK-001 | POST | `/api/checkin` | ADMIN | 체크인 처리 | `qrToken` | `USED` | P1 | 예정 |
