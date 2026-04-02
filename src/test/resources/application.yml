@@ -21,6 +21,10 @@ jwt:
   refresh-token-exp-days: 14
 
 app:
+  hold:
+    ttl-minutes: 5
+  reservation:
+    ttl-minutes: 15
   sample-data:
     events:
       enabled: false

@@ -24,7 +24,7 @@
                 <li>공연장을 upsert 한 뒤 좌석/구역 기준정보를 등록합니다.</li>
                 <li>등록 후 <strong>조회 버튼</strong>으로 seatId / sectionId를 확인합니다.</li>
                 <li>이벤트와 회차를 만든 다음 회차 인벤토리를 생성합니다.</li>
-                <li>마지막에 <strong>가용성/홀드 페이지 열기</strong>로 USER 선점 흐름까지 이어서 확인합니다.</li>
+                <li>마지막에 <strong>가용성/홀드/예약 페이지 열기</strong>로 USER 예매 흐름까지 이어서 확인합니다.</li>
             </ol>
         </div>
     </header>
@@ -203,13 +203,14 @@
                     <p class="section-copy">조회한 seatId / sectionId를 사용해 회차별 판매 좌석과 구역 재고를 생성합니다.</p>
                 </div>
 
-                <div class="action-grid three-up compact-grid inventory-meta">
+                <div class="action-grid four-up compact-grid inventory-meta">
                     <label class="inline-label">
                         <span>Show ID</span>
                         <input id="inventory-show-id-input" type="number" min="1" placeholder="회차 생성 결과 자동 입력" />
                     </label>
                     <button id="open-availability-button" type="button" class="button button-inline button-inline-strong">가용성 페이지 열기</button>
                     <button id="open-holds-button" type="button" class="button button-inline button-inline-strong">홀드 페이지 열기</button>
+                    <button id="open-reservations-button" type="button" class="button button-inline button-inline-strong">예약 페이지 열기</button>
                 </div>
 
                 <div class="split-panel">

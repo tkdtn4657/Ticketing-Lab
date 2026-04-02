@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reservations API Test Console</title>
+    <link rel="stylesheet" href="/css/reservations-test.css" />
+</head>
+<body>
+<main class="page">
+    <header class="hero card">
+        <div class="hero-copy">
+            <p class="eyebrow">RESERVATIONS API</p>
+            <h1>예약 생성부터 내 예약 목록까지 한 화면에서 검증하기</h1>
+            <p class="hero-text">
+                <code>RES-001</code>, <code>RES-002</code>, <code>RES-003</code> 흐름을 빠르게 확인하는 테스트 페이지입니다.
+                사용자 access token으로 hold를 예약으로 전환하고, 같은 화면에서 상세 조회와 내 예약 목록, 그리고 <code>SHW-001</code> 가용성 반영까지 함께 점검할 수 있습니다.
+            </p>
+        </div>
+        <div class="hero-panel">
+            <p class="hero-panel-label">권장 확인 순서</p>
+            <ol>
+                <li><strong>USER Access Token</strong>을 입력해 저장합니다.</li>
+                <li><strong>Hold ID</strong>로 <code>POST /api/reservations</code>를 호출해 예약을 생성합니다.</li>
+                <li>생성된 <code>reservationId</code>로 상세 조회를 호출해 상태와 총액, items를 확인합니다.</li>
+                <li><strong>내 예약 목록</strong>으로 페이지/상태 필터 응답을 점검합니다.</li>
+                <li><strong>가용성 조회</strong>로 좌석 <code>RESERVED</code>, 구역 <code>remainingQty</code> 반영을 확인합니다.</li>
+            </ol>
+        </div>
+    </header>
+
+    <section class="flow-strip" aria-label="Reservations endpoints overview">
+        <article class="flow-item">
+            <p>HLD-002</p>
+            <h2>선점 확인</h2>
+            <span>GET /api/holds/{holdId}</span>
+        </article>
+        <article class="flow-item flow-item-accent">
+            <p>RES-001</p>
+            <h2>예약 생성</h2>
+            <span>POST /api/reservations</span>
+        </article>
+        <article class="flow-item">
+            <p>RES-002</p>
+            <h2>예약 상세</h2>
+            <span>GET /api/reservations/{reservationId}</span>
+        </article>
+        <article class="flow-item">
+            <p>RES-003</p>
+            <h2>내 예약 목록</h2>
+            <span>GET /api/me/reservations</span>
+        </article>
+    </section>
+
+    <section class="workspace">
+        <div class="main-column">
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 0</p>
+                        <h2>USER 토큰</h2>
+                    </div>
+                    <p class="section-copy">브라우저에서 예약 API를 호출하려면 사용자 access token이 필요합니다.</p>
+                </div>
+
+                <div class="form-grid">
+                    <label>
+                        <span>Access Token</span>
+                        <textarea id="access-token-input" rows="4" placeholder="Bearer 없이 access token 본문만 입력"></textarea>
+                    </label>
+                </div>
+
+                <div class="utility-inline">
+                    <button id="save-token-button" type="button" class="button button-dark">토큰 저장</button>
+                    <span id="token-status-badge" class="status idle">TOKEN EMPTY</span>
+                </div>
+            </section>
+
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 1</p>
+                        <h2>예약 생성</h2>
+                    </div>
+                    <p class="section-copy">활성 holdId 하나를 결제 대기 상태의 reservation으로 전환합니다. 만료되었거나 이미 전환된 hold는 실패합니다.</p>
+                </div>
+
+                <div class="form-grid two-col">
+                    <label>
+                        <span>Hold ID</span>
+                        <input id="hold-id-input" type="text" placeholder="UUID holdId" />
+                    </label>
+                    <label>
+                        <span>Create Endpoint</span>
+                        <input id="create-endpoint-preview" type="text" value="/api/reservations" readonly />
+                    </label>
+                </div>
+
+                <div class="action-grid two-up">
+                    <button id="create-reservation-button" type="button" class="button button-primary">
+                        <span class="button-code">RES-001</span>
+                        <strong>예약 생성</strong>
+                    </button>
+                    <button id="open-holds-button" type="button" class="button button-secondary">
+                        <span class="button-code">LINK</span>
+                        <strong>홀드 페이지 열기</strong>
+                    </button>
+                </div>
+
+                <div class="note-box">
+                    <strong>체크 포인트</strong>
+                    <ul>
+                        <li>성공 시 hold는 <code>CONVERTED</code>, reservation은 <code>PENDING_PAYMENT</code> 상태가 됩니다.</li>
+                        <li>좌석은 <code>RESERVED</code>로 바뀌고, 구역 수량은 기존 hold 상태를 유지합니다.</li>
+                        <li>본인 hold가 아니거나 존재하지 않으면 <code>404 Not Found</code>가 내려옵니다.</li>
+                        <li>만료된 reservation 자원은 새 hold 생성 시 lazy release 됩니다.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 2</p>
+                        <h2>예약 상세 / 내 목록</h2>
+                    </div>
+                    <p class="section-copy">생성 응답의 <code>reservationId</code>를 상세 조회에 사용하고, 목록 조회는 페이지와 상태 필터를 함께 점검합니다.</p>
+                </div>
+
+                <div class="form-grid two-col">
+                    <label>
+                        <span>Reservation ID</span>
+                        <input id="reservation-id-input" type="text" placeholder="UUID reservationId" />
+                    </label>
+                    <label>
+                        <span>Detail Endpoint</span>
+                        <input id="detail-endpoint-preview" type="text" value="/api/reservations/{reservationId}" readonly />
+                    </label>
+                </div>
+
+                <div class="form-grid two-col">
+                    <label>
+                        <span>Page</span>
+                        <input id="page-input" type="number" min="0" step="1" value="0" />
+                    </label>
+                    <label>
+                        <span>Size</span>
+                        <input id="size-input" type="number" min="1" max="100" step="1" value="20" />
+                    </label>
+                </div>
+
+                <div class="form-grid two-col">
+                    <label>
+                        <span>Status Filter</span>
+                        <select id="status-filter-select">
+                            <option value="">전체</option>
+                            <option value="PENDING_PAYMENT">PENDING_PAYMENT</option>
+                            <option value="PAID">PAID</option>
+                            <option value="CANCELED">CANCELED</option>
+                            <option value="EXPIRED">EXPIRED</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>List Endpoint</span>
+                        <input id="list-endpoint-preview" type="text" value="/api/me/reservations?page=0&amp;size=20" readonly />
+                    </label>
+                </div>
+
+                <div class="action-grid three-up">
+                    <button id="get-reservation-button" type="button" class="button button-dark">
+                        <span class="button-code">RES-002</span>
+                        <strong>예약 조회</strong>
+                    </button>
+                    <button id="list-reservations-button" type="button" class="button button-secondary">
+                        <span class="button-code">RES-003</span>
+                        <strong>내 예약 목록</strong>
+                    </button>
+                    <button id="load-availability-button" type="button" class="button button-inline">
+                        <span class="button-code">SHW-001</span>
+                        <strong>가용성 조회</strong>
+                    </button>
+                </div>
+            </section>
+
+            <section class="card board-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">RESERVATION ITEMS</p>
+                        <h2>현재 예약 구성</h2>
+                    </div>
+                    <span id="reservation-summary-badge" class="status idle">No Reservation Loaded</span>
+                </div>
+                <div id="reservation-item-list-view" class="inventory-grid"></div>
+            </section>
+
+            <section class="card board-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">MY RESERVATIONS</p>
+                        <h2>내 예약 목록</h2>
+                    </div>
+                    <span id="reservations-summary-badge" class="status idle">No Reservations Loaded</span>
+                </div>
+                <div id="reservation-list-view" class="inventory-grid"></div>
+            </section>
+
+            <section class="card board-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">SEATS</p>
+                        <h2>좌석 가용 현황</h2>
+                    </div>
+                    <span id="seats-summary-badge" class="status idle">No Seats Loaded</span>
+                </div>
+                <div id="seat-list-view" class="inventory-grid"></div>
+            </section>
+
+            <section class="card board-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">SECTIONS</p>
+                        <h2>구역 잔여 현황</h2>
+                    </div>
+                    <span id="sections-summary-badge" class="status idle">No Sections Loaded</span>
+                </div>
+                <div id="section-list-view" class="inventory-grid"></div>
+            </section>
+
+            <section class="card utility-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">UTILITY</p>
+                        <h2>보조 작업</h2>
+                    </div>
+                </div>
+                <div class="action-grid three-up">
+                    <button id="open-shows-button" type="button" class="button button-inline">
+                        <span class="button-code">LINK</span>
+                        <strong>가용성 페이지 열기</strong>
+                    </button>
+                    <button id="clear-state-button" type="button" class="button button-inline">
+                        <span class="button-code">RESET</span>
+                        <strong>로컬 상태 초기화</strong>
+                    </button>
+                    <button id="clear-log-button" type="button" class="button button-inline">
+                        <span class="button-code">LOG</span>
+                        <strong>로그 지우기</strong>
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <aside class="side-column">
+            <section class="card state-card sticky-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">STATE</p>
+                        <h2>현재 상태</h2>
+                    </div>
+                    <span id="console-status" class="status idle">Ready</span>
+                </div>
+
+                <div class="state-grid">
+                    <article>
+                        <span class="field-label">Saved Token</span>
+                        <strong id="state-token-status">EMPTY</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Hold ID</span>
+                        <strong id="state-hold-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Reservation ID</span>
+                        <strong id="state-reservation-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Show ID</span>
+                        <strong id="state-show-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Reservation Status</span>
+                        <strong id="state-reservation-status">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Item Count</span>
+                        <strong id="state-item-count">0</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Total Amount</span>
+                        <strong id="state-total-amount">0</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">List Total</span>
+                        <strong id="state-list-total">0</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Expires At</span>
+                        <strong id="state-expires-at">-</strong>
+                    </article>
+                    <article class="wide">
+                        <span class="field-label">Created At</span>
+                        <strong id="state-created-at">-</strong>
+                    </article>
+                </div>
+
+                <label>
+                    <span class="field-label">Reservation Snapshot</span>
+                    <textarea id="state-reservation-snapshot" rows="10" readonly></textarea>
+                </label>
+                <label>
+                    <span class="field-label">My Reservations Snapshot</span>
+                    <textarea id="state-list-snapshot" rows="10" readonly></textarea>
+                </label>
+                <label>
+                    <span class="field-label">Availability Snapshot</span>
+                    <textarea id="state-availability-snapshot" rows="10" readonly></textarea>
+                </label>
+            </section>
+
+            <section class="card response-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">RESPONSE</p>
+                        <h2>최신 응답</h2>
+                    </div>
+                </div>
+
+                <div class="response-meta">
+                    <div>
+                        <span class="meta-label">Action</span>
+                        <strong id="last-action">Ready</strong>
+                    </div>
+                    <div>
+                        <span class="meta-label">Status</span>
+                        <strong id="last-status">No request yet</strong>
+                    </div>
+                </div>
+
+                <pre id="result-view">{
+  "ready": true,
+  "message": "Reservations API Test Console loaded"
+}</pre>
+            </section>
+        </aside>
+    </section>
+</main>
+<script src="/js/reservations-test.js"></script>
+</body>
+</html>

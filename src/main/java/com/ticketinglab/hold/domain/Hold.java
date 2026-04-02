@@ -113,4 +113,14 @@ public class Hold {
             this.status = HoldStatus.CANCELED;
         }
     }
+
+    public void convert() {
+        if (status == HoldStatus.CONVERTED) {
+            throw new IllegalStateException("hold already converted");
+        }
+        if (status != HoldStatus.ACTIVE) {
+            throw new IllegalStateException("hold not active");
+        }
+        this.status = HoldStatus.CONVERTED;
+    }
 }

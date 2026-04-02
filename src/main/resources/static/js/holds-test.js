@@ -33,6 +33,7 @@ const dom = {
     getHoldButton: document.getElementById("get-hold-button"),
     cancelHoldButton: document.getElementById("cancel-hold-button"),
     openShowsButton: document.getElementById("open-shows-button"),
+    openReservationsButton: document.getElementById("open-reservations-button"),
     clearStateButton: document.getElementById("clear-state-button"),
     clearLogButton: document.getElementById("clear-log-button"),
     holdItemListView: document.getElementById("hold-item-list-view"),
@@ -677,6 +678,26 @@ dom.openShowsButton.addEventListener("click", () => {
     }
 
     window.open(`${API_BASE}/shows-test.html?showId=${encodeURIComponent(showId)}`, "_blank", "noopener,noreferrer");
+});
+dom.openReservationsButton.addEventListener("click", () => {
+    const showId = dom.showIdInput.value.trim() || (state.selectedShowId != null ? String(state.selectedShowId) : "");
+    const holdId = dom.holdIdInput.value.trim() || state.holdId;
+    if (!showId && !holdId) {
+        renderLog("Holds Console", "Invalid input", {
+            error: "showId나 holdId를 먼저 입력하거나 홀드를 조회해 주세요."
+        });
+        return;
+    }
+
+    const params = new URLSearchParams();
+    if (showId) {
+        params.set("showId", showId);
+    }
+    if (holdId) {
+        params.set("holdId", holdId);
+    }
+
+    window.open(`${API_BASE}/reservations-test.html?${params.toString()}`, "_blank", "noopener,noreferrer");
 });
 dom.clearStateButton.addEventListener("click", () => {
     resetState();

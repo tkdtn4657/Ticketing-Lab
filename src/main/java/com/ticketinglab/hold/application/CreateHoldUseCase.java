@@ -6,6 +6,7 @@ import com.ticketinglab.hold.domain.Hold;
 import com.ticketinglab.hold.domain.HoldRepository;
 import com.ticketinglab.hold.presentation.dto.CreateHoldRequest;
 import com.ticketinglab.hold.presentation.dto.CreateHoldResponse;
+import com.ticketinglab.reservation.application.ReservationResourceManager;
 import com.ticketinglab.show.domain.ShowSectionInventory;
 import com.ticketinglab.show.domain.ShowSeat;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class CreateHoldUseCase {
     private final ShowRepository showRepository;
     private final HoldRepository holdRepository;
     private final HoldResourceManager holdResourceManager;
+    private final ReservationResourceManager reservationResourceManager;
 
     @Value("${app.hold.ttl-minutes:5}")
     private long holdTtlMinutes;
@@ -42,6 +44,13 @@ public class CreateHoldUseCase {
 
         RequestedItems requestedItems = normalize(request.items());
         LocalDateTime now = LocalDateTime.now();
+
+        reservationResourceManager.expirePendingReservations(
+                show.getId(),
+                requestedItems.seatIds(),
+                requestedItems.sectionIds(),
+                now
+        );
 
         HoldResourceManager.LockedResources lockedResources = holdResourceManager.prepareForCreate(
                 show.getId(),

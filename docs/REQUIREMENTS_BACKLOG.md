@@ -25,8 +25,8 @@
 | Hold | REQ-HOLD-002 | Hold TTL 만료 | 5분 TTL, 만료 자동 해제 | P0 | 진행중 | create/get/delete 시 lazy release, scheduler 미구현 |
 | Hold | REQ-HOLD-003 | 동시성 안전성 | 좌석 중복 홀드 불가, 구역 잔여 수량 보호 | P0 | 진행중 | 요청 자원 기준 row lock 적용 |
 | Hold | REQ-HOLD-004 | 홀드 조회/취소 | 본인 hold 조회 및 취소 | P0 | 구현완료 | 만료 조회 시 EXPIRED 반영 |
-| Reservation | REQ-RES-001 | 예약 생성 | hold_items를 reservation_items로 복사 | P0 | 예정 | |
-| Reservation | REQ-RES-002 | 예약 상태 관리 | `PENDING_PAYMENT -> PAID`, 만료/취소 포함 | P0 | 예정 | |
+| Reservation | REQ-RES-001 | 예약 생성 | hold_items를 reservation_items로 복사 | P0 | 구현완료 | hold -> reservation 전환 및 자원 유지 |
+| Reservation | REQ-RES-002 | 예약 상태 관리 | `PENDING_PAYMENT -> PAID`, 만료/취소 포함 | P0 | 진행중 | `EXPIRED` lazy release 구현, `PAID/CANCELED`는 후속 단계 |
 | Payment | REQ-PAY-001 | 결제 멱등성 | `Idempotency-Key` 지원 | P0 | 예정 | |
 | Payment | REQ-PAY-002 | 결제 승인 처리 | 승인 후 PAID 전환 및 티켓 발급 | P0 | 예정 | |
 | Ticket | REQ-TKT-001 | 티켓 발급 | 결제 성공 후 ticket 생성 | P0 | 예정 | |

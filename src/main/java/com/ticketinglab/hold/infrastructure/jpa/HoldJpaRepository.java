@@ -2,7 +2,9 @@ package com.ticketinglab.hold.infrastructure.jpa;
 
 import com.ticketinglab.hold.domain.Hold;
 import com.ticketinglab.hold.domain.HoldStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -20,6 +22,14 @@ public interface HoldJpaRepository extends JpaRepository<Hold, String> {
             where hold.id = :holdId
             """)
     Optional<Hold> findDetailedById(@Param("holdId") String holdId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select hold
+            from Hold hold
+            where hold.id = :holdId
+            """)
+    Optional<Hold> findLockedById(@Param("holdId") String holdId);
 
     @Query("""
             select distinct hold
