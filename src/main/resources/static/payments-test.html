@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payments API Test Console</title>
+    <link rel="stylesheet" href="/css/reservations-test.css" />
+</head>
+<body>
+<main class="page">
+    <header class="hero card">
+        <div class="hero-copy">
+            <p class="eyebrow">PAYMENTS &amp; TICKETS API</p>
+            <h1>결제 확정과 내 티켓 조회를 한 화면에서 검증하기</h1>
+            <p class="hero-text">
+                <code>PAY-001</code>, <code>PAY-002</code>, <code>PAY-003</code>, <code>TKT-001</code> 흐름을 빠르게 확인하는 테스트 페이지입니다.
+                예약 생성 이후 <code>POST /api/payments/confirm</code>로 결제를 완료하고, 같은 화면에서 <code>GET /api/me/tickets</code> 응답까지 이어서 점검할 수 있습니다.
+            </p>
+        </div>
+        <div class="hero-panel">
+            <p class="hero-panel-label">권장 확인 순서</p>
+            <ol>
+                <li><strong>USER Access Token</strong>을 저장합니다.</li>
+                <li><strong>Reservation ID</strong>, <strong>Amount</strong>, <strong>Idempotency-Key</strong>를 입력합니다.</li>
+                <li><code>POST /api/payments/confirm</code>를 호출해 <code>PAID</code> 전환과 결제 응답을 확인합니다.</li>
+                <li><code>GET /api/me/tickets</code>로 발급된 좌석/구역 티켓 수와 식별자를 확인합니다.</li>
+            </ol>
+        </div>
+    </header>
+
+    <section class="flow-strip" aria-label="Payments endpoints overview">
+        <article class="flow-item">
+            <p>RES-002</p>
+            <h2>예약 상세</h2>
+            <span>GET /api/reservations/{reservationId}</span>
+        </article>
+        <article class="flow-item flow-item-accent">
+            <p>PAY-001</p>
+            <h2>결제 확정</h2>
+            <span>POST /api/payments/confirm</span>
+        </article>
+        <article class="flow-item">
+            <p>TKT-001</p>
+            <h2>내 티켓 목록</h2>
+            <span>GET /api/me/tickets</span>
+        </article>
+        <article class="flow-item">
+            <p>LINK</p>
+            <h2>예약 콘솔</h2>
+            <span>/reservations-test.html</span>
+        </article>
+    </section>
+
+    <section class="workspace">
+        <div class="main-column">
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 0</p>
+                        <h2>USER 토큰</h2>
+                    </div>
+                    <p class="section-copy">브라우저에서 결제 API와 티켓 API를 호출하려면 사용자 access token이 필요합니다.</p>
+                </div>
+
+                <div class="form-grid">
+                    <label>
+                        <span>Access Token</span>
+                        <textarea id="access-token-input" rows="4" placeholder="Bearer 없이 access token 본문만 입력"></textarea>
+                    </label>
+                </div>
+
+                <div class="utility-inline">
+                    <button id="save-token-button" type="button" class="button button-dark">토큰 저장</button>
+                    <span id="token-status-badge" class="status idle">TOKEN EMPTY</span>
+                </div>
+            </section>
+
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 1</p>
+                        <h2>결제 확정</h2>
+                    </div>
+                    <p class="section-copy">예약 금액과 멱등 키를 검증한 뒤 결제를 승인하고, reservation item 수량 기준으로 티켓을 발급합니다.</p>
+                </div>
+
+                <div class="form-grid two-col">
+                    <label>
+                        <span>Reservation ID</span>
+                        <input id="reservation-id-input" type="text" placeholder="UUID reservationId" />
+                    </label>
+                    <label>
+                        <span>Amount</span>
+                        <input id="amount-input" type="number" min="1" step="1" value="0" />
+                    </label>
+                </div>
+
+                <div class="form-grid two-col">
+                    <label>
+                        <span>Idempotency-Key</span>
+                        <input id="idempotency-key-input" type="text" placeholder="예: UUID" />
+                    </label>
+                    <label>
+                        <span>Confirm Endpoint</span>
+                        <input id="confirm-endpoint-preview" type="text" value="/api/payments/confirm" readonly />
+                    </label>
+                </div>
+
+                <div class="action-grid three-up">
+                    <button id="confirm-payment-button" type="button" class="button button-primary">
+                        <span class="button-code">PAY-001</span>
+                        <strong>결제 확정</strong>
+                    </button>
+                    <button id="generate-key-button" type="button" class="button button-secondary">
+                        <span class="button-code">KEY</span>
+                        <strong>멱등 키 생성</strong>
+                    </button>
+                    <button id="open-reservations-button" type="button" class="button button-inline">
+                        <span class="button-code">LINK</span>
+                        <strong>예약 페이지 열기</strong>
+                    </button>
+                </div>
+
+                <div class="note-box">
+                    <strong>체크 포인트</strong>
+                    <ul>
+                        <li>같은 <code>Idempotency-Key</code>로 같은 요청을 다시 보내면 동일한 payment 응답이 재사용됩니다.</li>
+                        <li><code>amount</code>가 reservation 총액과 다르면 <code>409 Conflict</code>가 내려옵니다.</li>
+                        <li>성공 시 reservation은 <code>PAID</code>, 결제는 <code>APPROVED</code>가 됩니다.</li>
+                        <li>구역형 item은 <code>qty</code>만큼 개별 ticket이 생성되고, <code>holdQty -&gt; soldQty</code>로 이동합니다.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 2</p>
+                        <h2>내 티켓 목록</h2>
+                    </div>
+                    <p class="section-copy">결제 후 발급된 티켓을 페이지 단위로 조회합니다. 좌석형과 구역형 티켓이 같은 목록에 개별 row로 표시됩니다.</p>
+                </div>
+
+                <div class="form-grid two-col">
+                    <label>
+                        <span>Page</span>
+                        <input id="page-input" type="number" min="0" step="1" value="0" />
+                    </label>
+                    <label>
+                        <span>Size</span>
+                        <input id="size-input" type="number" min="1" max="100" step="1" value="20" />
+                    </label>
+                </div>
+
+                <div class="form-grid two-col">
+                    <label>
+                        <span>Tickets Endpoint</span>
+                        <input id="tickets-endpoint-preview" type="text" value="/api/me/tickets?page=0&amp;size=20" readonly />
+                    </label>
+                    <label>
+                        <span>Latest Payment ID</span>
+                        <input id="payment-id-preview" type="text" value="-" readonly />
+                    </label>
+                </div>
+
+                <div class="action-grid two-up">
+                    <button id="list-tickets-button" type="button" class="button button-dark">
+                        <span class="button-code">TKT-001</span>
+                        <strong>내 티켓 조회</strong>
+                    </button>
+                    <button id="clear-state-button" type="button" class="button button-inline">
+                        <span class="button-code">RESET</span>
+                        <strong>로컬 상태 초기화</strong>
+                    </button>
+                </div>
+            </section>
+
+            <section class="card board-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">MY TICKETS</p>
+                        <h2>발급된 티켓 목록</h2>
+                    </div>
+                    <span id="tickets-summary-badge" class="status idle">No Tickets Loaded</span>
+                </div>
+                <div id="ticket-list-view" class="inventory-grid"></div>
+            </section>
+
+            <section class="card utility-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">UTILITY</p>
+                        <h2>보조 작업</h2>
+                    </div>
+                </div>
+                <div class="action-grid two-up">
+                    <button id="open-auth-button" type="button" class="button button-inline">
+                        <span class="button-code">LINK</span>
+                        <strong>인증 페이지 열기</strong>
+                    </button>
+                    <button id="clear-log-button" type="button" class="button button-inline">
+                        <span class="button-code">LOG</span>
+                        <strong>로그 지우기</strong>
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <aside class="side-column">
+            <section class="card state-card sticky-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">STATE</p>
+                        <h2>현재 상태</h2>
+                    </div>
+                    <span id="console-status" class="status idle">Ready</span>
+                </div>
+
+                <div class="state-grid">
+                    <article>
+                        <span class="field-label">Saved Token</span>
+                        <strong id="state-token-status">EMPTY</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Reservation ID</span>
+                        <strong id="state-reservation-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Amount</span>
+                        <strong id="state-amount">0</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Idempotency-Key</span>
+                        <strong id="state-idempotency-key">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Payment ID</span>
+                        <strong id="state-payment-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Payment Status</span>
+                        <strong id="state-payment-status">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Reservation Status</span>
+                        <strong id="state-reservation-status">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Ticket Count</span>
+                        <strong id="state-ticket-count">0</strong>
+                    </article>
+                    <article class="wide">
+                        <span class="field-label">Approved At</span>
+                        <strong id="state-approved-at">-</strong>
+                    </article>
+                </div>
+
+                <label>
+                    <span class="field-label">Payment Snapshot</span>
+                    <textarea id="state-payment-snapshot" rows="10" readonly></textarea>
+                </label>
+                <label>
+                    <span class="field-label">Tickets Snapshot</span>
+                    <textarea id="state-tickets-snapshot" rows="10" readonly></textarea>
+                </label>
+            </section>
+
+            <section class="card response-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">RESPONSE</p>
+                        <h2>최신 응답</h2>
+                    </div>
+                </div>
+
+                <div class="response-meta">
+                    <div>
+                        <span class="meta-label">Action</span>
+                        <strong id="last-action">Ready</strong>
+                    </div>
+                    <div>
+                        <span class="meta-label">Status</span>
+                        <strong id="last-status">No request yet</strong>
+                    </div>
+                </div>
+
+                <pre id="result-view">{
+  "ready": true,
+  "message": "Payments API Test Console loaded"
+}</pre>
+            </section>
+        </aside>
+    </section>
+</main>
+<script src="/js/payments-test.js"></script>
+</body>
+</html>
