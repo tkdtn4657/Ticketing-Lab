@@ -84,10 +84,15 @@
 - Reservation TTL은 15분이며, 생성/상세/목록/새 hold 생성 시점에 만료된 reservation을 lazy release 한다.
 
 ### Payment
-- `POST /api/payments/confirm` with `Idempotency-Key`
+- `POST /api/payments/confirm` with Header `Idempotency-Key`
+- `reservationId`, `amount`는 reservation 소유권과 총액 기준으로 검증한다.
+- 성공 시 reservation은 `PAID`가 되고, 구역형 재고는 `hold_qty`에서 `sold_qty`로 이동한다.
+- 같은 `Idempotency-Key`로 같은 요청을 재호출하면 동일한 payment 응답을 반환한다.
 
 ### Ticket / Check-in
 - `GET /api/me/tickets`
+- 결제 성공 시 `reservation_items` 기준으로 ticket을 발급한다.
+- 좌석형 item은 1장, 구역형 item은 `qty`만큼 개별 ticket이 생성된다.
 - `POST /api/checkin`
 
 ### Admin

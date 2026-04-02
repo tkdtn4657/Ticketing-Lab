@@ -92,6 +92,8 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/api/reservations", configuration);
         source.registerCorsConfiguration("/api/reservations/**", configuration);
         source.registerCorsConfiguration("/api/me/reservations", configuration);
+        source.registerCorsConfiguration("/api/payments/confirm", configuration);
+        source.registerCorsConfiguration("/api/me/tickets", configuration);
         source.registerCorsConfiguration("/api/admin/**", configuration);
         source.registerCorsConfiguration("/api/checkin", configuration);
         return source;

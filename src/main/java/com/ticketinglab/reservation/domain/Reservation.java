@@ -97,6 +97,14 @@ public class Reservation {
         return status == ReservationStatus.PENDING_PAYMENT;
     }
 
+    public boolean isPaid() {
+        return status == ReservationStatus.PAID;
+    }
+
+    public boolean hasAmount(int amount) {
+        return totalAmount == amount;
+    }
+
     public boolean isExpiredAt(LocalDateTime at) {
         return expiresAt != null && !expiresAt.isAfter(at);
     }
@@ -109,6 +117,17 @@ public class Reservation {
             throw new IllegalStateException("reservation not expired");
         }
         this.status = ReservationStatus.EXPIRED;
+    }
+
+    public void confirmPayment() {
+        if (status == ReservationStatus.PAID) {
+            throw new IllegalStateException("reservation already paid");
+        }
+        if (status != ReservationStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException("reservation not pending payment");
+        }
+        this.status = ReservationStatus.PAID;
+        this.expiresAt = null;
     }
 
     private void addItem(HoldItem holdItem) {

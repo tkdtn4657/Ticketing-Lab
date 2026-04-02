@@ -95,6 +95,17 @@ public class ShowSectionInventory {
         this.holdQty -= quantity;
     }
 
+    public void confirmSale(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("quantity must be positive");
+        }
+        if (holdQty < quantity) {
+            throw new IllegalStateException("section hold quantity underflow");
+        }
+        this.holdQty -= quantity;
+        this.soldQty += quantity;
+    }
+
     @Builder
     public ShowSectionInventory(
             Show show,
