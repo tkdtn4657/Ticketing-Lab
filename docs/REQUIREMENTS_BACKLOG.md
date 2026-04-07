@@ -10,6 +10,7 @@
 | Common | REQ-COM-001 | JSON API 공통 형식 | 모든 요청/응답은 JSON 기반이며 Content-Type을 일관되게 사용한다 | P0 | 예정 | |
 | Common | REQ-COM-002 | 공통 에러 응답 | `{code,message,traceId}` 형태의 공통 에러 응답을 제공한다 | P0 | 예정 | |
 | Common | REQ-COM-003 | 시간 표현 일관성 | ISO-8601, Asia/Seoul 기준으로 일관되게 반환한다 | P1 | 예정 | |
+| Common | REQ-COM-004 | Swagger/OpenAPI 문서 | 구현 완료 API가 Swagger UI와 OpenAPI JSON/YAML에서 탐색 가능하고 Bearer 인증 및 예시를 제공한다 | P1 | 구현완료 | `/docs/swagger-ui.html` |
 | Auth | REQ-AUTH-001 | 회원가입 | 이메일 unique, BCrypt 해시, 기본 USER role | P0 | 구현완료 | |
 | Auth | REQ-AUTH-002 | 로그인 | email/password로 access/refresh 발급 | P0 | 구현완료 | |
 | Auth | REQ-AUTH-003 | JWT 인증 필터 | Bearer 토큰 검증 및 SecurityContext 세팅 | P0 | 구현완료 | |
