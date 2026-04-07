@@ -19,6 +19,24 @@
 - IntelliJ: Spring Boot 실행 구성의 활성 프로파일에 `local`을 입력한다.
 - CLI: `./gradlew bootRun --args='--spring.profiles.active=local'`로 실행한다.
 
+## Swagger / OpenAPI 확인 경로
+- Swagger UI: `/docs/swagger-ui.html`
+- OpenAPI JSON: `/docs/api-docs`
+- OpenAPI YAML: `/docs/api-docs.yaml`
+- Swagger는 `/api/**`만 노출하며 `Bearer` 인증을 기본으로 사용한다.
+- 공개 API를 제외한 호출은 Swagger UI 우측 상단 `Authorize`에서 `Bearer {accessToken}` 형식으로 입력한다.
+- Swagger 예시는 통합 테스트와 정적 테스트 페이지의 요청/응답 흐름을 기준으로 관리한다.
+
+## 함께 확인하기 좋은 테스트 페이지
+- `/auth-test.html`
+- `/events-test.html`
+- `/shows-test.html`
+- `/holds-test.html`
+- `/reservations-test.html`
+- `/payments-test.html`
+- `/checkin-test.html`
+- `/admin-test.html`
+
 ## 현재 로컬 동작 방식
 - `local` 프로필에서는 이벤트 샘플 데이터를 활성화한다.
 - `local` 프로필에서는 `spring.jpa.hibernate.ddl-auto=update`를 사용해 재시작 때마다 스키마를 다시 만들지 않도록 한다.

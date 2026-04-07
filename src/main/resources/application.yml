@@ -29,6 +29,18 @@ logging:
 server:
   port: 9090
 
+springdoc:
+  paths-to-match: /api/**
+  api-docs:
+    path: /docs/api-docs
+  swagger-ui:
+    path: /docs/swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    doc-expansion: none
+    persist-authorization: true
+    try-it-out-enabled: true
+
 jwt:
   secret: "bXktc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTMyLWJ5dGVzIQ=="
   access-token-exp-min: 15
