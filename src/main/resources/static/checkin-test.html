@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Check-in API Test Console</title>
+    <link rel="stylesheet" href="/css/reservations-test.css" />
+</head>
+<body>
+<main class="page">
+    <header class="hero card">
+        <div class="hero-copy">
+            <p class="eyebrow">CHECK-IN API</p>
+            <h1>발급된 티켓을 실제 입장 처리까지 닫아보기</h1>
+            <p class="hero-text">
+                <code>CHK-001</code> 체크인 API를 빠르게 검증하는 테스트 페이지입니다.
+                결제 이후 발급된 <code>qrToken</code>을 입력해 <code>POST /api/checkin</code>을 호출하고,
+                <code>ISSUED -&gt; USED</code> 전환과 중복 체크인 방지를 바로 확인할 수 있습니다.
+            </p>
+        </div>
+        <div class="hero-panel">
+            <p class="hero-panel-label">권장 확인 순서</p>
+            <ol>
+                <li><strong>ADMIN Access Token</strong>을 저장합니다.</li>
+                <li><strong>qrToken</strong>을 <code>GET /api/me/tickets</code> 또는 결제 테스트 페이지에서 복사합니다.</li>
+                <li><code>POST /api/checkin</code>으로 체크인을 실행해 <code>USED</code>, <code>usedAt</code>을 확인합니다.</li>
+                <li>같은 <code>qrToken</code>으로 다시 호출해 중복 체크인이 막히는지 확인합니다.</li>
+            </ol>
+        </div>
+    </header>
+
+    <section class="flow-strip" aria-label="Check-in endpoints overview">
+        <article class="flow-item flow-item-accent">
+            <p>CHK-001</p>
+            <h2>체크인 처리</h2>
+            <span>POST /api/checkin</span>
+        </article>
+        <article class="flow-item">
+            <p>TKT-001</p>
+            <h2>티켓 QR 확인</h2>
+            <span>GET /api/me/tickets</span>
+        </article>
+        <article class="flow-item">
+            <p>LINK</p>
+            <h2>관리자 콘솔</h2>
+            <span>/admin-test.html</span>
+        </article>
+    </section>
+
+    <section class="workspace">
+        <div class="main-column">
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 0</p>
+                        <h2>ADMIN 토큰</h2>
+                    </div>
+                    <p class="section-copy">체크인 API는 ADMIN 권한만 허용합니다. access token을 저장한 뒤 요청을 실행합니다.</p>
+                </div>
+
+                <div class="form-grid">
+                    <label>
+                        <span>Access Token</span>
+                        <textarea id="access-token-input" rows="4" placeholder="Bearer 없이 access token 본문만 입력"></textarea>
+                    </label>
+                </div>
+
+                <div class="utility-inline">
+                    <button id="save-token-button" type="button" class="button button-dark">토큰 저장</button>
+                    <span id="token-status-badge" class="status idle">TOKEN EMPTY</span>
+                </div>
+            </section>
+
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 1</p>
+                        <h2>QR 체크인</h2>
+                    </div>
+                    <p class="section-copy">유효한 qrToken이면 티켓을 USED로 전환하고, 이미 사용한 티켓은 409 Conflict로 막습니다.</p>
+                </div>
+
+                <div class="form-grid two-col">
+                    <label>
+                        <span>QR Token</span>
+                        <textarea id="qr-token-input" rows="5" placeholder="GET /api/me/tickets에서 받은 qrToken"></textarea>
+                    </label>
+                    <label>
+                        <span>Check-in Endpoint</span>
+                        <input id="checkin-endpoint-preview" type="text" value="/api/checkin" readonly />
+                    </label>
+                </div>
+
+                <div class="action-grid three-up">
+                    <button id="checkin-button" type="button" class="button button-primary">
+                        <span class="button-code">CHK-001</span>
+                        <strong>체크인 처리</strong>
+                    </button>
+                    <button id="open-admin-button" type="button" class="button button-inline">
+                        <span class="button-code">LINK</span>
+                        <strong>관리자 콘솔 열기</strong>
+                    </button>
+                    <button id="open-payments-button" type="button" class="button button-secondary">
+                        <span class="button-code">LINK</span>
+                        <strong>결제/티켓 페이지 열기</strong>
+                    </button>
+                </div>
+
+                <div class="note-box">
+                    <strong>체크 포인트</strong>
+                    <ul>
+                        <li>존재하지 않는 <code>qrToken</code>이면 <code>404 Not Found</code>가 내려옵니다.</li>
+                        <li>성공 시 응답과 티켓 조회 모두 <code>status=USED</code>, <code>usedAt</code>이 반영됩니다.</li>
+                        <li>같은 티켓을 다시 체크인하면 <code>409 Conflict</code>로 중복 입장을 막습니다.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="card board-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">CHECK-IN RESULT</p>
+                        <h2>최근 체크인 티켓</h2>
+                    </div>
+                    <span id="checkin-summary-badge" class="status idle">No Check-in Yet</span>
+                </div>
+                <div id="checkin-ticket-view" class="inventory-grid"></div>
+            </section>
+
+            <section class="card utility-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">UTILITY</p>
+                        <h2>보조 작업</h2>
+                    </div>
+                </div>
+                <div class="action-grid three-up">
+                    <button id="open-auth-button" type="button" class="button button-inline">
+                        <span class="button-code">LINK</span>
+                        <strong>인증 페이지 열기</strong>
+                    </button>
+                    <button id="clear-state-button" type="button" class="button button-inline">
+                        <span class="button-code">RESET</span>
+                        <strong>로컬 상태 초기화</strong>
+                    </button>
+                    <button id="clear-log-button" type="button" class="button button-inline">
+                        <span class="button-code">LOG</span>
+                        <strong>로그 지우기</strong>
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <aside class="side-column">
+            <section class="card state-card sticky-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">STATE</p>
+                        <h2>현재 상태</h2>
+                    </div>
+                    <span id="console-status" class="status idle">Ready</span>
+                </div>
+
+                <div class="state-grid">
+                    <article>
+                        <span class="field-label">Saved Token</span>
+                        <strong id="state-token-status">EMPTY</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">QR Token</span>
+                        <strong id="state-qr-token">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Ticket ID</span>
+                        <strong id="state-ticket-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Reservation ID</span>
+                        <strong id="state-reservation-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Show ID</span>
+                        <strong id="state-show-id">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Item Type</span>
+                        <strong id="state-type">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Seat / Section</span>
+                        <strong id="state-resource">-</strong>
+                    </article>
+                    <article>
+                        <span class="field-label">Status</span>
+                        <strong id="state-status">-</strong>
+                    </article>
+                    <article class="wide">
+                        <span class="field-label">Used At</span>
+                        <strong id="state-used-at">-</strong>
+                    </article>
+                    <article class="wide">
+                        <span class="field-label">Serial</span>
+                        <strong id="state-serial">-</strong>
+                    </article>
+                </div>
+
+                <label>
+                    <span class="field-label">Check-in Snapshot</span>
+                    <textarea id="state-checkin-snapshot" rows="12" readonly></textarea>
+                </label>
+            </section>
+
+            <section class="card response-card">
+                <div class="section-head compact-head">
+                    <div>
+                        <p class="eyebrow">RESPONSE</p>
+                        <h2>최신 응답</h2>
+                    </div>
+                </div>
+
+                <div class="response-meta">
+                    <div>
+                        <span class="meta-label">Action</span>
+                        <strong id="last-action">Ready</strong>
+                    </div>
+                    <div>
+                        <span class="meta-label">Status</span>
+                        <strong id="last-status">No request yet</strong>
+                    </div>
+                </div>
+
+                <pre id="result-view">{
+  "ready": true,
+  "message": "Check-in API Test Console loaded"
+}</pre>
+            </section>
+        </aside>
+    </section>
+</main>
+<script src="/js/checkin-test.js"></script>
+</body>
+</html>

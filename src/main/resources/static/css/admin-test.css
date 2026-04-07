@@ -283,6 +283,10 @@ textarea[readonly] {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.action-grid.four-up {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .compact-grid {
     align-items: end;
 }
@@ -502,6 +506,7 @@ pre {
     .form-grid.two-col,
     .split-panel,
     .action-grid.three-up,
+    .action-grid.four-up,
     .state-grid,
     .response-meta,
     .action-grid.two-up {

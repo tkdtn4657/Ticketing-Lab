@@ -27,7 +27,7 @@
 | Reservations | RES-003 | GET | `/api/me/reservations` | USER | 내 예약 목록 조회 | `page`, `size`, `status?` | `page,size,totalElements,totalPages,reservations[]` | P1 | 구현완료 |
 | Payments | PAY-001 | POST | `/api/payments/confirm` | USER | 결제 승인 및 멱등 처리 | Header `Idempotency-Key`, Body `reservationId`, `amount` | `paymentId`, `reservationId`, `status`, `reservationStatus`, `approvedAt` | P0 | 구현완료 |
 | Tickets | TKT-001 | GET | `/api/me/tickets` | USER | 내 티켓 목록 조회 | `page`, `size` | `page,size,totalElements,totalPages,tickets[ticketId,reservationId,showId,reservationItemId,type,seatId,sectionId,serial,qrToken,status,usedAt,createdAt]` | P1 | 구현완료 |
-| Checkin | CHK-001 | POST | `/api/checkin` | ADMIN | 체크인 처리 | `qrToken` | `USED` | P1 | 예정 |
+| Checkin | CHK-001 | POST | `/api/checkin` | ADMIN | 체크인 처리 | `qrToken` | `ticketId,reservationId,showId,reservationItemId,type,seatId,sectionId,serial,qrToken,status,usedAt` | P1 | 구현완료 |
 | Admin | ADM-001 | POST | `/api/admin/venues/upsert` | ADMIN | 공연장 등록/수정 | `code`, `name`, `address` | `venueId` | P0 | 구현완료 |
 | Admin | ADM-002 | POST | `/api/admin/venues/{venueId}/seats` | ADMIN | 공연장 좌석 기준정보 등록 | `seats[]` | `createdCount` | P0 | 구현완료 |
 | Admin | ADM-008 | GET | `/api/admin/venues/{venueId}/seats` | ADMIN | 공연장 좌석 기준정보 조회 | - | `seats[seatId,label,rowNo,colNo]` | P1 | 구현완료 |
