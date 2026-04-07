@@ -63,6 +63,11 @@ const dom = {
     openAvailabilityButton: document.getElementById("open-availability-button"),
     openHoldsButton: document.getElementById("open-holds-button"),
     openReservationsButton: document.getElementById("open-reservations-button"),
+    checkinQrTokenInput: document.getElementById("checkin-qr-token-input"),
+    checkinEndpointPreview: document.getElementById("checkin-endpoint-preview"),
+    checkinButton: document.getElementById("checkin-button"),
+    openPaymentsButton: document.getElementById("open-payments-button"),
+    openCheckinPageButton: document.getElementById("open-checkin-page-button"),
     clearStateButton: document.getElementById("clear-state-button"),
     clearLogButton: document.getElementById("clear-log-button"),
     consoleStatus: document.getElementById("console-status"),
@@ -352,6 +357,7 @@ function resetState() {
     dom.showVenueIdInput.value = "";
     dom.showEventIdInput.value = "";
     dom.inventoryShowIdInput.value = "";
+    dom.checkinQrTokenInput.value = "";
     dom.showSeatItemsInput.value = defaultShowSeatItems;
     dom.sectionInventoryItemsInput.value = defaultSectionInventoryItems;
 
@@ -599,6 +605,32 @@ dom.openReservationsButton.addEventListener("click", () => {
 
     window.open(buildEndpoint(`/reservations-test.html?showId=${showId}`), "_blank", "noopener,noreferrer");
 });
+dom.checkinButton.addEventListener("click", async () => {
+    const qrToken = dom.checkinQrTokenInput.value.trim();
+    if (!qrToken) {
+        renderLog("CHK-001 Check-in", "Invalid input", {
+            error: "qrToken을 입력해 주세요."
+        });
+        return;
+    }
+
+    await callApi({
+        title: "CHK-001 Check-in",
+        endpoint: buildEndpoint("/api/checkin"),
+        method: "POST",
+        body: { qrToken }
+    });
+});
+
+dom.openPaymentsButton.addEventListener("click", () => {
+    window.open(buildEndpoint("/payments-test.html"), "_blank", "noopener,noreferrer");
+});
+
+dom.openCheckinPageButton.addEventListener("click", () => {
+    const qrToken = dom.checkinQrTokenInput.value.trim();
+    const suffix = qrToken ? `?qrToken=${encodeURIComponent(qrToken)}` : "";
+    window.open(buildEndpoint(`/checkin-test.html${suffix}`), "_blank", "noopener,noreferrer");
+});
 dom.clearStateButton.addEventListener("click", resetState);
 
 dom.clearLogButton.addEventListener("click", () => {
@@ -619,6 +651,7 @@ dom.clearLogButton.addEventListener("click", () => {
     dom.showSeatItemsInput.value = defaultShowSeatItems;
     dom.sectionInventoryItemsInput.value = defaultSectionInventoryItems;
     dom.showStartAtInput.value = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
+    dom.checkinEndpointPreview.value = buildEndpoint("/api/checkin").replace(API_BASE, "");
 
     if (state.accessToken) {
         dom.accessTokenInput.value = state.accessToken;

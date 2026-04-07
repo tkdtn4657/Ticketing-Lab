@@ -38,6 +38,7 @@
         <article class="flow-item"><p>ADM-004</p><h2>Create Event</h2><span>POST /api/admin/events</span></article>
         <article class="flow-item"><p>ADM-005</p><h2>Create Show</h2><span>POST /api/admin/shows</span></article>
         <article class="flow-item flow-item-accent"><p>ADM-006/007</p><h2>Create Inventory</h2><span>POST /api/admin/shows/{showId}/...</span></article>
+        <article class="flow-item"><p>CHK-001</p><h2>Check-in</h2><span>POST /api/checkin</span></article>
     </section>
 
     <section class="workspace">
@@ -238,6 +239,37 @@
                         </button>
                     </article>
                 </div>
+            </section>
+            <section class="card control-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">STEP 4</p>
+                        <h2>QR 체크인</h2>
+                    </div>
+                    <p class="section-copy">결제/티켓 페이지에서 확인한 qrToken을 넣고 ADMIN 권한으로 체크인을 실행합니다.</p>
+                </div>
+
+                <div class="form-grid two-col">
+                    <label>
+                        <span>QR Token</span>
+                        <textarea id="checkin-qr-token-input" rows="5" placeholder="GET /api/me/tickets에서 받은 qrToken"></textarea>
+                    </label>
+                    <label>
+                        <span>Check-in Endpoint</span>
+                        <input id="checkin-endpoint-preview" type="text" value="/api/checkin" readonly />
+                    </label>
+                </div>
+
+                <div class="action-grid three-up compact-grid">
+                    <button id="checkin-button" type="button" class="button button-dark">
+                        <span class="button-code">CHK-001</span>
+                        <strong>체크인 처리</strong>
+                    </button>
+                    <button id="open-payments-button" type="button" class="button button-inline button-inline-strong">결제/티켓 페이지 열기</button>
+                    <button id="open-checkin-page-button" type="button" class="button button-inline button-inline-strong">체크인 페이지 열기</button>
+                </div>
+
+                <div class="mini-note">같은 qrToken으로 다시 호출하면 409 Conflict가 내려와 중복 체크인이 막혀야 합니다.</div>
             </section>
         </div>
 

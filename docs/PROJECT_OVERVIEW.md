@@ -94,6 +94,10 @@
 - 결제 성공 시 `reservation_items` 기준으로 ticket을 발급한다.
 - 좌석형 item은 1장, 구역형 item은 `qty`만큼 개별 ticket이 생성된다.
 - `POST /api/checkin`
+- 체크인 API는 `ADMIN`만 호출할 수 있으며, `qrToken` 기준으로 ticket을 조회한다.
+- 체크인 성공 시 ticket은 `ISSUED -> USED`로 전이되고 `used_at`이 기록된다.
+- 이미 사용된 ticket을 다시 체크인하면 `409 Conflict`로 중복 입장을 막는다.
+- 체크인 이후 `GET /api/me/tickets` 응답에는 `status=USED`, `usedAt`이 반영된다.
 
 ### Admin
 - `POST /api/admin/venues/upsert`
@@ -110,4 +114,4 @@
 1. Auth 회원가입, 로그인, 토큰 흐름 안정화
 2. Hold/Reservation 동시성 처리 뼈대 구현
 3. Admin venue/show inventory API 구현
-4. 결제 승인과 티켓 발급 연결
+4. 결제 승인, 티켓 발급, 체크인 연결

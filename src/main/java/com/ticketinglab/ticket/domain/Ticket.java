@@ -15,6 +15,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -75,5 +76,17 @@ public class Ticket {
                 null,
                 LocalDateTime.now()
         );
+    }
+
+    public void checkIn(LocalDateTime checkedInAt) {
+        if (status == TicketStatus.USED) {
+            throw new IllegalStateException("ticket already used");
+        }
+        if (status != TicketStatus.ISSUED) {
+            throw new IllegalStateException("ticket not available for checkin");
+        }
+
+        this.status = TicketStatus.USED;
+        this.usedAt = Objects.requireNonNull(checkedInAt, "checkedInAt");
     }
 }

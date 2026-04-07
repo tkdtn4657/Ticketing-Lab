@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -29,5 +30,10 @@ public class TicketRepositoryAdapter implements TicketRepository {
     @Override
     public List<Ticket> findAllByReservationId(String reservationId) {
         return jpaRepository.findAllByReservationId(reservationId);
+    }
+
+    @Override
+    public Optional<Ticket> findByQrTokenForUpdate(String qrToken) {
+        return jpaRepository.findByQrTokenForUpdate(qrToken);
     }
 }

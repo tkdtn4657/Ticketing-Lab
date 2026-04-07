@@ -30,7 +30,7 @@
 | Payment | REQ-PAY-001 | 결제 멱등성 | `Idempotency-Key` 지원 | P0 | 구현완료 | 동일 키 동일 요청 재호출 지원 |
 | Payment | REQ-PAY-002 | 결제 승인 처리 | 승인 후 PAID 전환 및 티켓 발급 | P0 | 구현완료 | amount 검증, section `hold_qty -> sold_qty` |
 | Ticket | REQ-TKT-001 | 티켓 발급 | 결제 성공 후 ticket 생성 | P0 | 구현완료 | `GET /api/me/tickets` 포함 |
-| Checkin | REQ-CHK-001 | 체크인 | `qrToken` 검증 및 USED 처리 | P1 | 예정 | ADMIN |
+| Checkin | REQ-CHK-001 | 체크인 | `qrToken` 검증 및 USED 처리 | P1 | 구현완료 | ADMIN, 중복 체크인 409, `/api/me/tickets` USED 반영 |
 | Admin | REQ-ADM-001 | Venue 등록/수정 | code 기반 upsert, venueId 반환 | P0 | 구현완료 | |
 | Admin | REQ-ADM-002 | 공연장 좌석/구역 기준정보 등록 | venue 기준 `seats`, `sections`를 생성한다 | P0 | 구현완료 | |
 | Admin | REQ-ADM-003 | 회차 판매 인벤토리 생성 | show 기준 `show_seats`, `show_section_inventories`를 생성한다 | P0 | 구현완료 | |
