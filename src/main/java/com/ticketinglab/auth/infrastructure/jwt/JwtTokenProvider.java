@@ -35,7 +35,7 @@ public class JwtTokenProvider {
             @Value("${jwt.access-token-exp-min}") long accessExpMin,
             @Value("${jwt.refresh-token-exp-days}") long refreshExpDays
     ) {
-        this.key = Keys.hmacShaKeyFor(Base64.getDecoder().decode(base64Secret));
+        this.key = createSigningKey(base64Secret);
         this.accessExpMin = accessExpMin;
         this.refreshExpDays = refreshExpDays;
     }
@@ -110,5 +110,20 @@ public class JwtTokenProvider {
         return Jwts.parser().verifyWith(key).build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    private SecretKey createSigningKey(String base64Secret) {
+        if (base64Secret == null || base64Secret.isBlank()) {
+            throw new IllegalStateException("jwt.secret must be configured.");
+        }
+
+        try {
+            return Keys.hmacShaKeyFor(Base64.getDecoder().decode(base64Secret));
+        } catch (RuntimeException e) {
+            throw new IllegalStateException(
+                    "jwt.secret must be a valid Base64-encoded key with at least 32 bytes.",
+                    e
+            );
+        }
     }
 }

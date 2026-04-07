@@ -28,7 +28,7 @@ springdoc:
     try-it-out-enabled: true
 
 jwt:
-  secret: "bXktc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTMyLWJ5dGVzIQ=="
+  secret: "dGVzdC1zZWNyZXQtbXVzdC1iZS1hdC1sZWFzdC0zMi1ieXRlcyEh"
   access-token-exp-min: 15
   refresh-token-exp-days: 14
 
