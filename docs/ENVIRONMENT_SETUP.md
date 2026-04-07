@@ -3,7 +3,14 @@
 ## 프로필 규칙
 - `src/main/resources/application.yml`은 모든 실행 환경이 공통으로 사용하는 기본 설정이다.
 - `src/main/resources/application-local.yml`은 `local` 프로필이 활성화될 때만 적용된다.
+- `src/main/resources/application-local-secret.yml`은 로컬 비밀값을 두는 Git 미추적 파일이다.
 - `src/test/resources/application.yml`은 자동화 테스트 전용 설정이며, 샘플 데이터를 비활성화한다.
+
+## 로컬 실행 전 준비
+- `src/main/resources/application-local-secret.example.yml`을 참고해 `src/main/resources/application-local-secret.yml`을 만든다.
+- `jwt.secret`에는 Base64로 인코딩된 32바이트 이상 비밀키를 넣는다.
+- DB 접속 정보는 기본값을 그대로 쓰거나 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` 환경변수로 덮어쓴다.
+- `JWT_SECRET` 환경변수를 써도 되지만, 로컬에서는 `application-local-secret.yml`로 관리하는 편이 실수하기 덜 쉽다.
 
 ## 이벤트 샘플 데이터
 - `EventSampleDataInitializer`는 `local` 프로필에서만 실행된다.
@@ -11,6 +18,7 @@
 - 이미 이벤트가 하나라도 있으면 샘플 데이터를 다시 넣지 않는다.
 
 ## 이렇게 분리한 이유
+- 공통 설정 파일에는 비밀값을 두지 않아 공개 저장소에 올려도 위험도를 낮춘다.
 - 샘플 데이터는 로컬 UI/API 확인에는 유용하다.
 - 테스트는 미리 적재된 데이터에 의존하지 않아야 한다.
 - 로컬이 아닌 환경에서 데모 데이터가 실수로 생성되면 안 된다.
@@ -40,3 +48,4 @@
 ## 현재 로컬 동작 방식
 - `local` 프로필에서는 이벤트 샘플 데이터를 활성화한다.
 - `local` 프로필에서는 `spring.jpa.hibernate.ddl-auto=update`를 사용해 재시작 때마다 스키마를 다시 만들지 않도록 한다.
+- `local` 프로필에서는 DB 기본값을 로컬 개발용으로 제공하고, JWT 비밀키는 별도 파일이나 환경변수로만 받는다.
