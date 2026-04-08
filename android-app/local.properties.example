@@ -1,0 +1,6 @@
+# 실제 Android SDK 경로를 local.properties 에 넣어야 디버그 빌드가 가능하다.
+# 예시:
+# sdk.dir=C:\Users\your-name\AppData\Local\Android\Sdk
+
+# 에뮬레이터에서 백엔드에 붙을 때는 localhost 대신 10.0.2.2 를 사용한다.
+ticketingApiBaseUrl=http://10.0.2.2:9090/
