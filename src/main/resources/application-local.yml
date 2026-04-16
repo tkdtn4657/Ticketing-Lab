@@ -17,3 +17,7 @@ app:
   sample-data:
     events:
       enabled: true
+    admin:
+      enabled: true
+      email: ${APP_SAMPLE_ADMIN_EMAIL:admin@example.com}
+      password: ${APP_SAMPLE_ADMIN_PASSWORD:admin1234}
