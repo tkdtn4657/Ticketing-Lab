@@ -17,6 +17,13 @@
 - 초기화기는 `app.sample-data.events.enabled=true`일 때만 동작한다.
 - 이미 이벤트가 하나라도 있으면 샘플 데이터를 다시 넣지 않는다.
 
+## 로컬 관리자 계정
+- `AdminAccountInitializer`는 `local` 프로필에서만 실행된다.
+- 초기화기는 `app.sample-data.admin.enabled=true`일 때만 동작한다.
+- 기본 로컬 관리자 계정은 `admin@example.com` / `admin1234` 이다.
+- 필요하면 `APP_SAMPLE_ADMIN_EMAIL`, `APP_SAMPLE_ADMIN_PASSWORD` 환경변수로 덮어쓴다.
+- 동일 이메일 사용자가 이미 있으면 다시 생성하지 않는다.
+
 ## 이렇게 분리한 이유
 - 공통 설정 파일에는 비밀값을 두지 않아 공개 저장소에 올려도 위험도를 낮춘다.
 - 샘플 데이터는 로컬 UI/API 확인에는 유용하다.
