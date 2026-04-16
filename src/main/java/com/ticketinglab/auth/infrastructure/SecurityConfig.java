@@ -81,27 +81,20 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:63342",
-                "http://127.0.0.1:63342"
+                "http://127.0.0.1:63342",
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:4173",
+                "http://127.0.0.1:4173"
         ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(false);
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key", "Accept", "Origin"));
+        configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/auth/**", configuration);
-        source.registerCorsConfiguration("/api/events", configuration);
-        source.registerCorsConfiguration("/api/events/**", configuration);
-        source.registerCorsConfiguration("/api/shows", configuration);
-        source.registerCorsConfiguration("/api/shows/**", configuration);
-        source.registerCorsConfiguration("/api/holds", configuration);
-        source.registerCorsConfiguration("/api/holds/**", configuration);
-        source.registerCorsConfiguration("/api/reservations", configuration);
-        source.registerCorsConfiguration("/api/reservations/**", configuration);
-        source.registerCorsConfiguration("/api/me/reservations", configuration);
-        source.registerCorsConfiguration("/api/payments/confirm", configuration);
-        source.registerCorsConfiguration("/api/me/tickets", configuration);
-        source.registerCorsConfiguration("/api/admin/**", configuration);
-        source.registerCorsConfiguration("/api/checkin", configuration);
+        source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }
 
