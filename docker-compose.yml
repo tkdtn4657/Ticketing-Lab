@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ticketing}
+      POSTGRES_USER: ${POSTGRES_USER:-ticketing}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ticketing}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ticketing}
+      DB_USERNAME: ${POSTGRES_USER:-ticketing}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-ticketing}
+      JWT_SECRET: ${JWT_SECRET:-dGVzdC1zZWNyZXQtbXVzdC1iZS1hdC1sZWFzdC0zMi1ieXRlcyEh}
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
+      APP_SAMPLE_EVENTS_ENABLED: ${APP_SAMPLE_EVENTS_ENABLED:-true}
+      APP_SAMPLE_ADMIN_ENABLED: ${APP_SAMPLE_ADMIN_ENABLED:-true}
+      APP_SAMPLE_ADMIN_EMAIL: ${APP_SAMPLE_ADMIN_EMAIL:-admin@example.com}
+      APP_SAMPLE_ADMIN_PASSWORD: ${APP_SAMPLE_ADMIN_PASSWORD:-admin1234}
+      JAVA_OPTS: ${JAVA_OPTS:-}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-9090}:9090"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  postgres-data:

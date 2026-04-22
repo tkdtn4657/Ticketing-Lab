@@ -3,6 +3,7 @@
 ## 프로필 규칙
 - `src/main/resources/application.yml`은 모든 실행 환경이 공통으로 사용하는 기본 설정이다.
 - `src/main/resources/application-local.yml`은 `local` 프로필이 활성화될 때만 적용된다.
+- `src/main/resources/application-docker.yml`은 `docker` 프로필이 활성화될 때만 적용된다.
 - `src/main/resources/application-local-secret.yml`은 로컬 비밀값을 두는 Git 미추적 파일이다.
 - `src/test/resources/application.yml`은 자동화 테스트 전용 설정이며, 샘플 데이터를 비활성화한다.
 
@@ -33,6 +34,21 @@
 ## 샘플 데이터와 함께 실행하는 방법
 - IntelliJ: Spring Boot 실행 구성의 활성 프로파일에 `local`을 입력한다.
 - CLI: `./gradlew bootRun --args='--spring.profiles.active=local'`로 실행한다.
+
+## Docker Compose로 백엔드만 실행하는 방법
+- 백엔드 루트에는 PostgreSQL과 애플리케이션을 함께 올리는 `docker-compose.yml`이 있다.
+- 먼저 `.env.example`을 복사해서 `.env`를 만든다.
+- 기본값만으로도 로컬 개발용 실행이 가능하지만, `JWT_SECRET`은 필요 시 원하는 값으로 바꿔도 된다.
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
+```
+
+- 기본 포트는 `9090`(backend), `5432`(postgres) 이다.
+- Docker Compose 실행 시 애플리케이션은 `docker` 프로필로 구동된다.
+- `docker` 프로필에서도 샘플 이벤트 데이터와 로컬 관리자 계정을 사용할 수 있다.
+- 관리자 계정 기본값은 `admin@example.com` / `admin1234` 이다.
 
 ## Swagger / OpenAPI 확인 경로
 - Swagger UI: `/docs/swagger-ui.html`
