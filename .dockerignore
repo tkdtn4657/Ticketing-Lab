@@ -1,0 +1,11 @@
+.git
+.gradle
+.gradle-home
+build
+out
+bin
+.idea
+.vscode
+*.iml
+*.log
+src/main/resources/application-local-secret.yml

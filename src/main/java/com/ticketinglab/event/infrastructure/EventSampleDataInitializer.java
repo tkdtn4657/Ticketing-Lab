@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 @Component
-@Profile("local")
+@Profile({"local", "docker"})
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "app.sample-data.events.enabled", havingValue = "true")
 public class EventSampleDataInitializer implements ApplicationRunner {
