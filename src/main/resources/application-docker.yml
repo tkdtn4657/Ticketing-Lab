@@ -1,0 +1,22 @@
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres:5432/ticketing}
+    username: ${DB_USERNAME:ticketing}
+    password: ${DB_PASSWORD:ticketing}
+
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+
+app:
+  sample-data:
+    events:
+      enabled: ${APP_SAMPLE_EVENTS_ENABLED:true}
+    admin:
+      enabled: ${APP_SAMPLE_ADMIN_ENABLED:true}
+      email: ${APP_SAMPLE_ADMIN_EMAIL:admin@example.com}
+      password: ${APP_SAMPLE_ADMIN_PASSWORD:admin1234}
