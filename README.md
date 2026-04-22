@@ -224,18 +224,67 @@ jwt:
 
 일반 기능 검증 시나리오는 [docs/FUNCTIONAL_TEST_SCENARIOS.md](docs/FUNCTIONAL_TEST_SCENARIOS.md), 성능/트래픽 테스트 계획은 [docs/PERFORMANCE_TEST_PLAN.md](docs/PERFORMANCE_TEST_PLAN.md)에 정리했습니다.
 
-## Docker Compose로 함께 실행하기
+## Docker Compose 실행
 
-통합 `Docker Compose` 실행 환경은 별도의 워크스페이스 루트에서 관리합니다.
-이 워크스페이스 루트는 PostgreSQL, 백엔드, 프론트엔드를 함께 실행하기 위한 통합 개발용 저장소이며, 현재 공개된 이 백엔드 레포지토리에서는 보이지 않을 수 있습니다.
-즉, 이 저장소만 단독으로 보는 경우에는 아래 명령이나 관련 파일이 포함되어 있지 않을 수 있고, 백엔드 단독 실행 기준으로 확인하면 됩니다.
+### 1. 백엔드 단독 실행
+
+이 레포지토리 안에는 PostgreSQL과 백엔드만 함께 올리는 전용 `docker-compose.yml`이 포함되어 있습니다.
+이 구성은 프론트엔드와 nginx를 제외하고, `PostgreSQL + Backend` 조합만 빠르게 확인하거나 백엔드 기능 검증을 진행할 때 사용합니다.
+
+실행 순서는 아래와 같습니다.
 
 ```powershell
 Copy-Item .env.example .env
 docker compose up --build
 ```
 
-백엔드 단독 실행 방법은 [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md)와 위의 로컬 실행 섹션을 참고하세요.
+필요하면 백그라운드 실행도 가능합니다.
+
+```powershell
+docker compose up -d --build
+```
+
+이 `docker compose`는 내부적으로 다음 구성을 사용합니다.
+
+- `postgres:16-alpine`
+- `backend` 애플리케이션 컨테이너
+- `docker` 프로필 기반 Spring Boot 실행
+- `actuator/health` 기반 헬스체크
+- 개발용 샘플 이벤트 데이터 / 관리자 계정 초기화
+
+실행 후 기본 접속 경로:
+
+- API 서버: `http://localhost:9090`
+- Swagger UI: `http://localhost:9090/docs/swagger-ui.html`
+- PostgreSQL: `localhost:5432`
+
+기본 개발용 샘플 데이터와 관리자 계정도 함께 사용할 수 있습니다.
+
+- 관리자 계정: `admin@example.com`
+- 관리자 비밀번호: `admin1234`
+
+`.env.example` 기준으로 자주 조정하는 값은 아래와 같습니다.
+
+- `BACKEND_PORT`: 백엔드 외부 포트
+- `POSTGRES_PORT`: PostgreSQL 외부 포트
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`: DB 접속 정보
+- `JWT_SECRET`: JWT 서명 키
+- `APP_SAMPLE_EVENTS_ENABLED`: 샘플 이벤트 데이터 생성 여부
+- `APP_SAMPLE_ADMIN_ENABLED`: 샘플 관리자 계정 생성 여부
+
+종료나 볼륨 정리는 아래 명령을 사용하면 됩니다.
+
+```powershell
+docker compose down
+docker compose down -v
+```
+
+환경변수 설명은 [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md)를 참고하세요.
+
+### 2. 풀스택 통합 실행
+
+프론트엔드, 백엔드, PostgreSQL을 함께 올리는 통합 `Docker Compose` 실행 환경은 별도의 워크스페이스 루트에서 관리합니다.
+이 워크스페이스 루트는 통합 개발용 저장소이며, 현재 공개된 이 백엔드 레포지토리에서는 보이지 않을 수 있습니다.
 
 ## 한 줄 정리
 
