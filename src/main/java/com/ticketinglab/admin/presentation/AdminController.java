@@ -1,5 +1,8 @@
 package com.ticketinglab.admin.presentation;
 
+import com.ticketinglab.admin.application.ListAdminEventsUseCase;
+import com.ticketinglab.admin.application.ListAdminShowsUseCase;
+import com.ticketinglab.admin.application.ListAdminVenuesUseCase;
 import com.ticketinglab.admin.application.CreateEventUseCase;
 import com.ticketinglab.admin.application.CreateShowSectionInventoriesUseCase;
 import com.ticketinglab.admin.application.CreateShowSeatsUseCase;
@@ -9,6 +12,9 @@ import com.ticketinglab.admin.application.ListVenueSeatsUseCase;
 import com.ticketinglab.admin.application.RegisterVenueSectionsUseCase;
 import com.ticketinglab.admin.application.RegisterVenueSeatsUseCase;
 import com.ticketinglab.admin.application.UpsertVenueUseCase;
+import com.ticketinglab.admin.presentation.dto.AdminEventListResponse;
+import com.ticketinglab.admin.presentation.dto.AdminShowListResponse;
+import com.ticketinglab.admin.presentation.dto.AdminVenueListResponse;
 import com.ticketinglab.admin.presentation.dto.CreateEventRequest;
 import com.ticketinglab.admin.presentation.dto.CreateEventResponse;
 import com.ticketinglab.admin.presentation.dto.CreateShowRequest;
@@ -35,6 +41,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,11 +56,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminController {
 
     private final UpsertVenueUseCase upsertVenueUseCase;
+    private final ListAdminVenuesUseCase listAdminVenuesUseCase;
     private final ListVenueSeatsUseCase listVenueSeatsUseCase;
     private final RegisterVenueSeatsUseCase registerVenueSeatsUseCase;
     private final ListVenueSectionsUseCase listVenueSectionsUseCase;
     private final RegisterVenueSectionsUseCase registerVenueSectionsUseCase;
+    private final ListAdminEventsUseCase listAdminEventsUseCase;
     private final CreateEventUseCase createEventUseCase;
+    private final ListAdminShowsUseCase listAdminShowsUseCase;
     private final CreateShowUseCase createShowUseCase;
     private final CreateShowSeatsUseCase createShowSeatsUseCase;
     private final CreateShowSectionInventoriesUseCase createShowSectionInventoriesUseCase;
@@ -83,8 +93,33 @@ public class AdminController {
             @ApiResponse(responseCode = "403", description = "ADMIN 권한이 필요합니다.")
     })
     @PostMapping("/venues/upsert")
-    public ResponseEntity<VenueUpsertResponse> upsertVenue(@Valid @RequestBody VenueUpsertRequest request) {
-        return ResponseEntity.ok(upsertVenueUseCase.execute(request));
+    public ResponseEntity<VenueUpsertResponse> upsertVenue(
+            @Parameter(hidden = true) Authentication authentication,
+            @Valid @RequestBody VenueUpsertRequest request
+    ) {
+        return ResponseEntity.ok(upsertVenueUseCase.execute(Long.valueOf(authentication.getName()), request));
+    }
+
+    @Operation(summary = "내 공연장 목록 조회", description = "ADM-010. 현재 관리자가 생성한 공연장 목록을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "공연장 목록 조회 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = AdminVenueListResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "Bearer 토큰이 필요합니다."),
+            @ApiResponse(responseCode = "403", description = "ADMIN 권한이 필요합니다.")
+    })
+    @GetMapping("/venues")
+    public ResponseEntity<AdminVenueListResponse> listVenues(
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(AdminVenueListResponse.from(
+                listAdminVenuesUseCase.execute(Long.valueOf(authentication.getName()))
+        ));
     }
 
     @Operation(summary = "공연장 좌석 기준정보 조회", description = "ADM-008. 공연장에 등록된 좌석 마스터 정보를 조회합니다.")
@@ -228,8 +263,33 @@ public class AdminController {
             @ApiResponse(responseCode = "403", description = "ADMIN 권한이 필요합니다.")
     })
     @PostMapping("/events")
-    public ResponseEntity<CreateEventResponse> createEvent(@Valid @RequestBody CreateEventRequest request) {
-        return ResponseEntity.ok(createEventUseCase.execute(request));
+    public ResponseEntity<CreateEventResponse> createEvent(
+            @Parameter(hidden = true) Authentication authentication,
+            @Valid @RequestBody CreateEventRequest request
+    ) {
+        return ResponseEntity.ok(createEventUseCase.execute(Long.valueOf(authentication.getName()), request));
+    }
+
+    @Operation(summary = "내 이벤트 목록 조회", description = "ADM-011. 현재 관리자가 생성한 이벤트 목록을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "이벤트 목록 조회 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = AdminEventListResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "Bearer 토큰이 필요합니다."),
+            @ApiResponse(responseCode = "403", description = "ADMIN 권한이 필요합니다.")
+    })
+    @GetMapping("/events")
+    public ResponseEntity<AdminEventListResponse> listEvents(
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(AdminEventListResponse.from(
+                listAdminEventsUseCase.execute(Long.valueOf(authentication.getName()))
+        ));
     }
 
     @Operation(summary = "회차 생성", description = "ADM-005. 이벤트와 공연장을 연결해 회차를 생성합니다.")
@@ -258,8 +318,33 @@ public class AdminController {
             @ApiResponse(responseCode = "404", description = "이벤트 또는 공연장을 찾을 수 없습니다.")
     })
     @PostMapping("/shows")
-    public ResponseEntity<CreateShowResponse> createShow(@Valid @RequestBody CreateShowRequest request) {
-        return ResponseEntity.ok(createShowUseCase.execute(request));
+    public ResponseEntity<CreateShowResponse> createShow(
+            @Parameter(hidden = true) Authentication authentication,
+            @Valid @RequestBody CreateShowRequest request
+    ) {
+        return ResponseEntity.ok(createShowUseCase.execute(Long.valueOf(authentication.getName()), request));
+    }
+
+    @Operation(summary = "내 회차 목록 조회", description = "ADM-012. 현재 관리자가 생성한 회차 목록을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "회차 목록 조회 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = AdminShowListResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "Bearer 토큰이 필요합니다."),
+            @ApiResponse(responseCode = "403", description = "ADMIN 권한이 필요합니다.")
+    })
+    @GetMapping("/shows")
+    public ResponseEntity<AdminShowListResponse> listShows(
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(AdminShowListResponse.from(
+                listAdminShowsUseCase.execute(Long.valueOf(authentication.getName()))
+        ));
     }
 
     @Operation(summary = "회차 좌석 판매 정보 생성", description = "ADM-006. 회차별 판매 좌석과 가격 정보를 일괄 생성합니다.")

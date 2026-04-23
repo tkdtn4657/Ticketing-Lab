@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Getter
@@ -38,7 +39,14 @@ public class Venue {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "created_by_user_id")
+    private Long createdByUserId;
+
     public static Venue create(String code, String name, String address) {
+        return create(code, name, address, null);
+    }
+
+    public static Venue create(String code, String name, String address, Long createdByUserId) {
         LocalDateTime now = LocalDateTime.now();
         return Venue.builder()
                 .code(code)
@@ -46,6 +54,7 @@ public class Venue {
                 .address(address)
                 .createdAt(now)
                 .updatedAt(now)
+                .createdByUserId(createdByUserId)
                 .build();
     }
 
@@ -55,6 +64,20 @@ public class Venue {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void assignCreatorIfMissing(Long userId) {
+        if (createdByUserId == null) {
+            this.createdByUserId = userId;
+        }
+    }
+
+    public boolean isCreatorMissing() {
+        return createdByUserId == null;
+    }
+
+    public boolean isCreatedBy(Long userId) {
+        return Objects.equals(createdByUserId, userId);
+    }
+
     @Builder
     public Venue(
             Long id,
@@ -62,7 +85,8 @@ public class Venue {
             String name,
             String address,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt
+            LocalDateTime updatedAt,
+            Long createdByUserId
     ) {
         this.id = id;
         this.code = code;
@@ -70,5 +94,6 @@ public class Venue {
         this.address = address;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.createdByUserId = createdByUserId;
     }
 }

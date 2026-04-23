@@ -43,6 +43,10 @@ public class User {
         return create(email, passwordHash, "ADMIN");
     }
 
+    public static User createMasterAdmin(String email, String passwordHash) {
+        return create(email, passwordHash, "MASTER_ADMIN");
+    }
+
     private static User create(String email, String passwordHash, String role) {
         return User.builder()
                 .email(email)

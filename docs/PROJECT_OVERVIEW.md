@@ -13,11 +13,13 @@
 ## 데이터 모델
 
 ### 기준 정보
-- `venues`
+- `venues(created_by_user_id)`
 - `seats(venue_id)`
 - `sections(venue_id)`
-- `events`
-- `shows(event_id, venue_id, start_at, status)`
+- `events(created_by_user_id)`
+- `shows(event_id, venue_id, start_at, status, created_by_user_id)`
+
+> `venues`, `events`, `shows`는 어드민 관리 화면에서 생성자를 추적하기 위해 `created_by_user_id`를 저장한다. 샘플/기존 데이터는 생성자가 없을 수 있으므로 nullable이다.
 
 ### 인벤토리
 - `show_seats(show_id, seat_id, price, status, version)`
@@ -45,11 +47,13 @@
 1. `Venue`를 생성하거나 수정한다.
 2. 공연장 기준 좌석은 `POST /api/admin/venues/{venueId}/seats`로 등록한다.
 3. 공연장 기준 구역은 `POST /api/admin/venues/{venueId}/sections`로 등록한다.
-4. 필요하면 `GET /api/admin/venues/{venueId}/seats`, `GET /api/admin/venues/{venueId}/sections`로 기준정보 ID를 확인한다.
+4. 필요하면 `GET /api/admin/venues`, `GET /api/admin/venues/{venueId}/seats`, `GET /api/admin/venues/{venueId}/sections`로 공연장과 기준정보 ID를 확인한다.
 5. `Event`를 생성하고, 그 아래에 `Show`를 생성한다.
 6. 회차별 판매 좌석은 `POST /api/admin/shows/{showId}/show-seats`로 생성한다.
 7. 회차별 구역 재고는 `POST /api/admin/shows/{showId}/section-inventories`로 생성한다.
 8. `GET /api/shows/{showId}/availability`는 위에서 생성된 `show_seats`, `show_section_inventories`를 읽는다.
+9. 일반 관리자 관리 화면에서는 `GET /api/admin/venues`, `GET /api/admin/events`, `GET /api/admin/shows`로 본인이 생성한 공연장/이벤트/회차를 다시 조회한다.
+10. 마스터 관리자 화면에서는 `GET /api/master/venues`, `GET /api/master/events`, `GET /api/master/shows`로 전체 데이터를 조회한다.
 
 ### 좌석 데이터 관점 정리
 - `seats`, `sections`는 공연장 기준정보다.
@@ -109,6 +113,14 @@
 - `POST /api/admin/shows`
 - `POST /api/admin/shows/{showId}/show-seats`
 - `POST /api/admin/shows/{showId}/section-inventories`
+- `GET /api/admin/venues`
+- `GET /api/admin/events`
+- `GET /api/admin/shows`
+
+### Master Admin
+- `GET /api/master/venues`
+- `GET /api/master/events`
+- `GET /api/master/shows`
 
 ## 단기 우선순위
 1. Auth 회원가입, 로그인, 토큰 흐름 안정화

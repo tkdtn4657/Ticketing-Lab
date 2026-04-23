@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Getter
@@ -38,12 +39,20 @@ public class Event {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "created_by_user_id")
+    private Long createdByUserId;
+
     public static Event create(String title, String description, EventStatus status) {
+        return create(title, description, status, null);
+    }
+
+    public static Event create(String title, String description, EventStatus status, Long createdByUserId) {
         return Event.builder()
                 .title(title)
                 .description(description)
                 .status(status)
                 .createdAt(LocalDateTime.now())
+                .createdByUserId(createdByUserId)
                 .build();
     }
 
@@ -51,12 +60,24 @@ public class Event {
         return this.status == status;
     }
 
+    public boolean isCreatedBy(Long userId) {
+        return Objects.equals(createdByUserId, userId);
+    }
+
     @Builder
-    public Event(Long id, String title, String description, EventStatus status, LocalDateTime createdAt) {
+    public Event(
+            Long id,
+            String title,
+            String description,
+            EventStatus status,
+            LocalDateTime createdAt,
+            Long createdByUserId
+    ) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.status = status;
         this.createdAt = createdAt;
+        this.createdByUserId = createdByUserId;
     }
 }

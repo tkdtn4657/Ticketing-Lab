@@ -26,6 +26,16 @@ public class ShowRepositoryAdapter implements ShowRepository {
     }
 
     @Override
+    public List<Show> findAll() {
+        return jpaRepository.findAllByOrderByStartAtDescIdDesc();
+    }
+
+    @Override
+    public List<Show> findAllByCreatedByUserId(Long userId) {
+        return jpaRepository.findAllByCreatedByUserIdOrderByStartAtDescIdDesc(userId);
+    }
+
+    @Override
     public List<Show> findAllByEventId(Long eventId) {
         return jpaRepository.findAllByEvent_IdOrderByStartAtAscIdAsc(eventId);
     }
