@@ -116,6 +116,26 @@ class AdminControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("ADM-001 rejects venue upsert by another admin")
+    void adm001_upsertVenue_rejectsCrossOwnerUpdate() throws Exception {
+        String ownerToken = createAccessToken("ADMIN");
+        String otherAdminToken = createAccessToken("ADMIN");
+
+        Long venueId = createVenue(ownerToken, "OWNER-ONLY-HALL", "Owner Hall");
+
+        mockMvc.perform(post("/api/admin/venues/upsert")
+                        .header("Authorization", bearer(otherAdminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(json(new VenueUpsertRequest("OWNER-ONLY-HALL", "Hijacked Hall", "Nowhere"))))
+                .andExpect(status().isForbidden());
+
+        Venue venue = venueRepository.findById(venueId).orElseThrow();
+        assertThat(venue.getName()).isEqualTo("Owner Hall");
+        assertThat(venue.getAddress()).isEqualTo("Seoul");
+    }
+
+    @Test
     @DisplayName("ADM-002 ADM-003 and reference lookup APIs register and list venue data")
     void adm002_003_registerAndListVenueReferenceData() throws Exception {
         String adminToken = createAccessToken("ADMIN");
@@ -174,7 +194,7 @@ class AdminControllerIntegrationTest {
     void adm004_005_createEventAndShow() throws Exception {
         String adminToken = createAccessToken("ADMIN");
         Long adminUserId = jwtTokenProvider.getUserId(adminToken);
-        Venue venue = venueRepository.save(Venue.create("DAEGU-HALL", "Daegu Hall", "Suseong"));
+        Long venueId = createVenue(adminToken, "DAEGU-HALL", "Daegu Hall");
 
         MvcResult eventResult = mockMvc.perform(post("/api/admin/events")
                         .header("Authorization", bearer(adminToken))
@@ -193,7 +213,7 @@ class AdminControllerIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json(new CreateShowRequest(
                                 eventId,
-                                venue.getId(),
+                                venueId,
                                 LocalDateTime.of(2026, 4, 20, 19, 30)
                         ))))
                 .andExpect(status().isOk())
@@ -205,8 +225,52 @@ class AdminControllerIntegrationTest {
         Event savedEvent = eventRepository.findById(eventId).orElseThrow();
         assertThat(savedEvent.getCreatedByUserId()).isEqualTo(adminUserId);
         assertThat(showRepository.findAllByEventId(eventId)).hasSize(1);
-        assertThat(showRepository.findAllByEventId(eventId).get(0).isHeldAt(venue.getId())).isTrue();
+        assertThat(showRepository.findAllByEventId(eventId).get(0).isHeldAt(venueId)).isTrue();
         assertThat(showRepository.findById(showId).orElseThrow().getCreatedByUserId()).isEqualTo(adminUserId);
+    }
+
+    @Test
+    @DisplayName("ADM-005 rejects show creation with resources owned by another admin")
+    void adm005_createShow_rejectsCrossOwnerResources() throws Exception {
+        String ownerToken = createAccessToken("ADMIN");
+        String otherAdminToken = createAccessToken("ADMIN");
+        Long ownerVenueId = createVenue(ownerToken, "SHOW-OWNER-HALL", "Show Owner Hall");
+        Long otherVenueId = createVenue(otherAdminToken, "SHOW-OTHER-HALL", "Show Other Hall");
+        Long ownerEventId = createEvent(ownerToken, "Show Owner Event");
+        Long otherEventId = createEvent(otherAdminToken, "Show Other Event");
+
+        mockMvc.perform(post("/api/admin/shows")
+                        .header("Authorization", bearer(otherAdminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(json(new CreateShowRequest(
+                                ownerEventId,
+                                otherVenueId,
+                                LocalDateTime.of(2026, 4, 21, 19, 30)
+                        ))))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/admin/shows")
+                        .header("Authorization", bearer(ownerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(json(new CreateShowRequest(
+                                ownerEventId,
+                                otherVenueId,
+                                LocalDateTime.of(2026, 4, 22, 19, 30)
+                        ))))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/admin/shows")
+                        .header("Authorization", bearer(ownerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(json(new CreateShowRequest(
+                                otherEventId,
+                                ownerVenueId,
+                                LocalDateTime.of(2026, 4, 23, 19, 30)
+                        ))))
+                .andExpect(status().isForbidden());
     }
 
     @Test

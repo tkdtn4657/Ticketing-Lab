@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Getter
@@ -67,6 +68,14 @@ public class Venue {
         if (createdByUserId == null) {
             this.createdByUserId = userId;
         }
+    }
+
+    public boolean isCreatorMissing() {
+        return createdByUserId == null;
+    }
+
+    public boolean isCreatedBy(Long userId) {
+        return Objects.equals(createdByUserId, userId);
     }
 
     @Builder

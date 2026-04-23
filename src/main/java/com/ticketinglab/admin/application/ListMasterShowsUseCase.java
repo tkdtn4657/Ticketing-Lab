@@ -1,7 +1,5 @@
 package com.ticketinglab.admin.application;
 
-import com.ticketinglab.admin.presentation.dto.AdminShowListResponse;
-import com.ticketinglab.admin.presentation.dto.AdminShowResponse;
 import com.ticketinglab.event.domain.Show;
 import com.ticketinglab.event.domain.ShowRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,13 +15,7 @@ public class ListMasterShowsUseCase {
     private final ShowRepository showRepository;
 
     @Transactional(readOnly = true)
-    public AdminShowListResponse execute() {
-        List<Show> shows = showRepository.findAll();
-
-        return new AdminShowListResponse(
-                shows.stream()
-                        .map(AdminShowResponse::from)
-                        .toList()
-        );
+    public List<Show> execute() {
+        return showRepository.findAll();
     }
 }

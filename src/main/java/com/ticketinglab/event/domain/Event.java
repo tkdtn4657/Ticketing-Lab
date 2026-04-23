@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Getter
@@ -57,6 +58,10 @@ public class Event {
 
     public boolean hasStatus(EventStatus status) {
         return this.status == status;
+    }
+
+    public boolean isCreatedBy(Long userId) {
+        return Objects.equals(createdByUserId, userId);
     }
 
     @Builder

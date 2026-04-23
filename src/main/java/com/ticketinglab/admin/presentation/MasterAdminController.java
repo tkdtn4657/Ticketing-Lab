@@ -44,7 +44,7 @@ public class MasterAdminController {
     })
     @GetMapping("/venues")
     public ResponseEntity<AdminVenueListResponse> listVenues() {
-        return ResponseEntity.ok(listMasterVenuesUseCase.execute());
+        return ResponseEntity.ok(AdminVenueListResponse.from(listMasterVenuesUseCase.execute()));
     }
 
     @Operation(summary = "전체 이벤트 목록 조회", description = "MST-002. MASTER_ADMIN 전용 전체 이벤트 목록을 조회합니다.")
@@ -62,7 +62,7 @@ public class MasterAdminController {
     })
     @GetMapping("/events")
     public ResponseEntity<AdminEventListResponse> listEvents() {
-        return ResponseEntity.ok(listMasterEventsUseCase.execute());
+        return ResponseEntity.ok(AdminEventListResponse.from(listMasterEventsUseCase.execute()));
     }
 
     @Operation(summary = "전체 회차 목록 조회", description = "MST-003. MASTER_ADMIN 전용 전체 회차 목록을 조회합니다.")
@@ -80,6 +80,6 @@ public class MasterAdminController {
     })
     @GetMapping("/shows")
     public ResponseEntity<AdminShowListResponse> listShows() {
-        return ResponseEntity.ok(listMasterShowsUseCase.execute());
+        return ResponseEntity.ok(AdminShowListResponse.from(listMasterShowsUseCase.execute()));
     }
 }

@@ -117,7 +117,9 @@ public class AdminController {
     public ResponseEntity<AdminVenueListResponse> listVenues(
             @Parameter(hidden = true) Authentication authentication
     ) {
-        return ResponseEntity.ok(listAdminVenuesUseCase.execute(Long.valueOf(authentication.getName())));
+        return ResponseEntity.ok(AdminVenueListResponse.from(
+                listAdminVenuesUseCase.execute(Long.valueOf(authentication.getName()))
+        ));
     }
 
     @Operation(summary = "공연장 좌석 기준정보 조회", description = "ADM-008. 공연장에 등록된 좌석 마스터 정보를 조회합니다.")
@@ -285,7 +287,9 @@ public class AdminController {
     public ResponseEntity<AdminEventListResponse> listEvents(
             @Parameter(hidden = true) Authentication authentication
     ) {
-        return ResponseEntity.ok(listAdminEventsUseCase.execute(Long.valueOf(authentication.getName())));
+        return ResponseEntity.ok(AdminEventListResponse.from(
+                listAdminEventsUseCase.execute(Long.valueOf(authentication.getName()))
+        ));
     }
 
     @Operation(summary = "회차 생성", description = "ADM-005. 이벤트와 공연장을 연결해 회차를 생성합니다.")
@@ -338,7 +342,9 @@ public class AdminController {
     public ResponseEntity<AdminShowListResponse> listShows(
             @Parameter(hidden = true) Authentication authentication
     ) {
-        return ResponseEntity.ok(listAdminShowsUseCase.execute(Long.valueOf(authentication.getName())));
+        return ResponseEntity.ok(AdminShowListResponse.from(
+                listAdminShowsUseCase.execute(Long.valueOf(authentication.getName()))
+        ));
     }
 
     @Operation(summary = "회차 좌석 판매 정보 생성", description = "ADM-006. 회차별 판매 좌석과 가격 정보를 일괄 생성합니다.")
