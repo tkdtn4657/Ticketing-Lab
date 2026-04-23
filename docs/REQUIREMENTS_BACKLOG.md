@@ -37,3 +37,5 @@
 | Admin | REQ-ADM-003 | 회차 판매 인벤토리 생성 | show 기준 `show_seats`, `show_section_inventories`를 생성한다 | P0 | 구현완료 | |
 | Admin | REQ-ADM-004 | 이벤트/회차/판매단위 관리 | 이벤트, 회차, 좌석판매, 구역재고 생성 | P0 | 구현완료 | |
 | Admin | REQ-ADM-005 | 공연장 기준정보 조회 | venue 기준 `seats`, `sections`를 조회해 seatId/sectionId를 확인한다 | P1 | 구현완료 | admin console 지원 |
+| Admin | REQ-ADM-006 | 어드민 생성자 추적 및 내 목록 조회 | `venues`, `events`, `shows`에 `created_by_user_id`를 기록하고 일반 ADMIN은 본인이 생성한 목록만 조회한다 | P1 | 구현완료 | |
+| Master Admin | REQ-MST-001 | 전체 관리 목록 조회 | MASTER_ADMIN만 전체 공연장, 이벤트, 회차 목록을 조회한다 | P1 | 구현완료 | `/api/master/**` |

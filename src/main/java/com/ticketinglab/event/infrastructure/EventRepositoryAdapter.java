@@ -40,4 +40,9 @@ public class EventRepositoryAdapter implements EventRepository {
     public List<Event> findAllByStatus(EventStatus status) {
         return jpaRepository.findAllByStatusOrderByCreatedAtDescIdDesc(status);
     }
+
+    @Override
+    public List<Event> findAllByCreatedByUserId(Long userId) {
+        return jpaRepository.findAllByCreatedByUserIdOrderByCreatedAtDescIdDesc(userId);
+    }
 }

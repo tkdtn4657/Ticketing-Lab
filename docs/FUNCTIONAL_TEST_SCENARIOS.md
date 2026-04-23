@@ -265,6 +265,69 @@
   `200 OK`
   `createdCount` 반환
 
+### FUNC-ADM-008 공연장 목록 조회
+
+- 목적:
+  어드민이 본인이 생성한 공연장 목록과 생성자 정보를 확인
+- 요청:
+  `GET /api/admin/venues`
+- 기대 결과:
+  `200 OK`
+  현재 관리자가 생성한 공연장만 반환
+  응답에 `createdByUserId` 포함
+
+### FUNC-ADM-009 이벤트 목록 조회
+
+- 목적:
+  어드민이 본인이 생성한 이벤트 목록과 생성자 정보를 확인
+- 요청:
+  `GET /api/admin/events`
+- 기대 결과:
+  `200 OK`
+  현재 관리자가 생성한 이벤트만 반환
+  응답에 `createdByUserId` 포함
+
+### FUNC-ADM-010 회차 목록 조회
+
+- 목적:
+  어드민이 본인이 생성한 회차 목록과 생성자 정보를 확인
+- 요청:
+  `GET /api/admin/shows`
+- 기대 결과:
+  `200 OK`
+  현재 관리자가 생성한 회차만 반환
+  응답에 `createdByUserId`, `eventId`, `eventTitle`, `venueId` 포함
+
+### FUNC-MST-001 전체 공연장 목록 조회
+
+- 목적:
+  마스터 관리자가 전체 공연장 목록을 확인
+- 요청:
+  `GET /api/master/venues`
+- 기대 결과:
+  `MASTER_ADMIN`은 `200 OK`와 전체 공연장 목록 반환
+  일반 `ADMIN`은 `403 Forbidden`
+
+### FUNC-MST-002 전체 이벤트 목록 조회
+
+- 목적:
+  마스터 관리자가 전체 이벤트 목록을 확인
+- 요청:
+  `GET /api/master/events`
+- 기대 결과:
+  `MASTER_ADMIN`은 `200 OK`와 전체 이벤트 목록 반환
+  일반 `ADMIN`은 `403 Forbidden`
+
+### FUNC-MST-003 전체 회차 목록 조회
+
+- 목적:
+  마스터 관리자가 전체 회차 목록을 확인
+- 요청:
+  `GET /api/master/shows`
+- 기대 결과:
+  `MASTER_ADMIN`은 `200 OK`와 전체 회차 목록 반환
+  일반 `ADMIN`은 `403 Forbidden`
+
 ### FUNC-VIEW-001 이벤트 목록 조회
 
 - 목적:

@@ -15,13 +15,14 @@ public class UpsertVenueUseCase {
     private final VenueRepository venueRepository;
 
     @Transactional
-    public VenueUpsertResponse execute(VenueUpsertRequest request) {
+    public VenueUpsertResponse execute(Long userId, VenueUpsertRequest request) {
         Venue venue = venueRepository.findByCode(request.code())
                 .map(existingVenue -> {
                     existingVenue.updateInfo(request.name(), request.address());
+                    existingVenue.assignCreatorIfMissing(userId);
                     return existingVenue;
                 })
-                .orElseGet(() -> Venue.create(request.code(), request.name(), request.address()));
+                .orElseGet(() -> Venue.create(request.code(), request.name(), request.address(), userId));
 
         Venue savedVenue = venueRepository.save(venue);
         return new VenueUpsertResponse(savedVenue.getId());

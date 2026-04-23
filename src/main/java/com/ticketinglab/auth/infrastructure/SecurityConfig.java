@@ -67,8 +67,9 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/refresh"
                         ).permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/checkin").hasRole("ADMIN")
+                        .requestMatchers("/api/master/**").hasRole("MASTER_ADMIN")
+                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "MASTER_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/checkin").hasAnyRole("ADMIN", "MASTER_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

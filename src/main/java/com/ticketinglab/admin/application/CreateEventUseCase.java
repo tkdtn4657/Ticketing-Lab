@@ -19,9 +19,9 @@ public class CreateEventUseCase {
     private final EventRepository eventRepository;
 
     @Transactional
-    public CreateEventResponse execute(CreateEventRequest request) {
+    public CreateEventResponse execute(Long userId, CreateEventRequest request) {
         EventStatus status = resolveStatus(request.status());
-        Event event = eventRepository.save(Event.create(request.title(), request.desc(), status));
+        Event event = eventRepository.save(Event.create(request.title(), request.desc(), status, userId));
         return new CreateEventResponse(event.getId());
     }
 

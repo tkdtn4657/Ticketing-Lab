@@ -45,23 +45,42 @@ public class Show {
     @Column(name = "venue_id", nullable = false)
     private Long venueId;
 
+    @Column(name = "created_by_user_id")
+    private Long createdByUserId;
+
     public static Show schedule(Event event, LocalDateTime startAt, Long venueId) {
+        return schedule(event, startAt, venueId, null);
+    }
+
+    public static Show schedule(Event event, LocalDateTime startAt, Long venueId, Long createdByUserId) {
         return Show.builder()
                 .event(event)
                 .startAt(startAt)
                 .status(ShowStatus.SCHEDULED)
                 .createdAt(LocalDateTime.now())
                 .venueId(venueId)
+                .createdByUserId(createdByUserId)
                 .build();
     }
 
     public static Show create(Event event, LocalDateTime startAt, ShowStatus status, Long venueId) {
+        return create(event, startAt, status, venueId, null);
+    }
+
+    public static Show create(
+            Event event,
+            LocalDateTime startAt,
+            ShowStatus status,
+            Long venueId,
+            Long createdByUserId
+    ) {
         return Show.builder()
                 .event(event)
                 .startAt(startAt)
                 .status(status)
                 .createdAt(LocalDateTime.now())
                 .venueId(venueId)
+                .createdByUserId(createdByUserId)
                 .build();
     }
 
@@ -76,7 +95,8 @@ public class Show {
             ShowStatus status,
             LocalDateTime createdAt,
             Event event,
-            Long venueId
+            Long venueId,
+            Long createdByUserId
     ) {
         this.id = id;
         this.startAt = startAt;
@@ -84,5 +104,6 @@ public class Show {
         this.createdAt = createdAt;
         this.event = event;
         this.venueId = venueId;
+        this.createdByUserId = createdByUserId;
     }
 }

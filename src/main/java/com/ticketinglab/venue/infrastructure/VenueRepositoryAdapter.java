@@ -6,6 +6,7 @@ import com.ticketinglab.venue.infrastructure.jpa.VenueJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -27,5 +28,15 @@ public class VenueRepositoryAdapter implements VenueRepository {
     @Override
     public Optional<Venue> findByCode(String code) {
         return jpaRepository.findByCode(code);
+    }
+
+    @Override
+    public List<Venue> findAll() {
+        return jpaRepository.findAllByOrderByCreatedAtDescIdDesc();
+    }
+
+    @Override
+    public List<Venue> findAllByCreatedByUserId(Long userId) {
+        return jpaRepository.findAllByCreatedByUserIdOrderByCreatedAtDescIdDesc(userId);
     }
 }

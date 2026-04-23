@@ -47,3 +47,9 @@
 | Admin | ADM-005 | POST | `/api/admin/shows` | ADMIN | 회차 생성 | `eventId`, `venueId`, `startAt` | `showId` | P0 | 구현완료 |
 | Admin | ADM-006 | POST | `/api/admin/shows/{showId}/show-seats` | ADMIN | 회차 좌석 판매 정보 생성 | `items[seatId,price]` | `createdCount` | P0 | 구현완료 |
 | Admin | ADM-007 | POST | `/api/admin/shows/{showId}/section-inventories` | ADMIN | 회차 구역 재고 생성 | `items[sectionId,price,capacity]` | `createdCount` | P0 | 구현완료 |
+| Admin | ADM-010 | GET | `/api/admin/venues` | ADMIN | 내 공연장 목록 조회 | - | `venues[venueId,code,name,address,createdByUserId,createdAt,updatedAt]` | P1 | 구현완료 |
+| Admin | ADM-011 | GET | `/api/admin/events` | ADMIN | 내 이벤트 목록 조회 | - | `events[eventId,title,description,status,createdByUserId,createdAt]` | P1 | 구현완료 |
+| Admin | ADM-012 | GET | `/api/admin/shows` | ADMIN | 내 회차 목록 조회 | - | `shows[showId,eventId,eventTitle,venueId,startAt,status,createdByUserId,createdAt]` | P1 | 구현완료 |
+| Master Admin | MST-001 | GET | `/api/master/venues` | MASTER_ADMIN | 전체 공연장 목록 조회 | - | `venues[venueId,code,name,address,createdByUserId,createdAt,updatedAt]` | P1 | 구현완료 |
+| Master Admin | MST-002 | GET | `/api/master/events` | MASTER_ADMIN | 전체 이벤트 목록 조회 | - | `events[eventId,title,description,status,createdByUserId,createdAt]` | P1 | 구현완료 |
+| Master Admin | MST-003 | GET | `/api/master/shows` | MASTER_ADMIN | 전체 회차 목록 조회 | - | `shows[showId,eventId,eventTitle,venueId,startAt,status,createdByUserId,createdAt]` | P1 | 구현완료 |

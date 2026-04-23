@@ -9,4 +9,5 @@ public interface EventRepository {
     Optional<Event> findById(Long eventId);
     List<Event> findAll();
     List<Event> findAllByStatus(EventStatus status);
+    List<Event> findAllByCreatedByUserId(Long userId);
 }

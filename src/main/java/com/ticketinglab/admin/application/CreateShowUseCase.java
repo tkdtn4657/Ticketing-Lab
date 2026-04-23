@@ -23,14 +23,14 @@ public class CreateShowUseCase {
     private final VenueRepository venueRepository;
 
     @Transactional
-    public CreateShowResponse execute(CreateShowRequest request) {
+    public CreateShowResponse execute(Long userId, CreateShowRequest request) {
         Event event = eventRepository.findById(request.eventId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "event not found"));
 
         venueRepository.findById(request.venueId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "venue not found"));
 
-        Show show = showRepository.save(Show.schedule(event, request.startAt(), request.venueId()));
+        Show show = showRepository.save(Show.schedule(event, request.startAt(), request.venueId(), userId));
         return new CreateShowResponse(show.getId());
     }
 }
