@@ -112,7 +112,9 @@ src/main/java/com/ticketinglab/
 - Spring MVC
 - Spring Security
 - Spring Data JPA
+- Spring Data Redis
 - PostgreSQL
+- Redis
 - springdoc-openapi
 - JWT
 - Gradle
@@ -124,15 +126,17 @@ src/main/java/com/ticketinglab/
 
 - Java 17
 - PostgreSQL
+- Redis
 
 기본 로컬 설정:
 
 - DB URL: `jdbc:postgresql://localhost:5432/ticketing`
 - DB Username: `postgres`
 - DB Password: `postgres`
+- Redis: `localhost:6379`
 - 서버 포트: `9090`
 
-필요하면 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` 환경변수로 덮어쓸 수 있습니다.
+필요하면 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `REDIS_HOST`, `REDIS_PORT` 환경변수로 덮어쓸 수 있습니다.
 
 ### 2. 로컬 비밀값 파일 만들기
 
@@ -228,8 +232,8 @@ jwt:
 
 ### 1. 백엔드 단독 실행
 
-이 레포지토리 안에는 PostgreSQL과 백엔드만 함께 올리는 전용 `docker-compose.yml`이 포함되어 있습니다.
-이 구성은 프론트엔드와 nginx를 제외하고, `PostgreSQL + Backend` 조합만 빠르게 확인하거나 백엔드 기능 검증을 진행할 때 사용합니다.
+이 레포지토리 안에는 PostgreSQL, Redis, 백엔드를 함께 올리는 전용 `docker-compose.yml`이 포함되어 있습니다.
+이 구성은 프론트엔드와 nginx를 제외하고, `PostgreSQL + Redis + Backend` 조합만 빠르게 확인하거나 백엔드 기능 검증을 진행할 때 사용합니다.
 
 실행 순서는 아래와 같습니다.
 
@@ -237,6 +241,9 @@ jwt:
 Copy-Item .env.example .env
 docker compose up --build
 ```
+
+기존 `postgres:16-alpine` 볼륨이 남아 있다면 PostgreSQL 18 컨테이너가 같은 데이터 디렉터리를 그대로 열 수 없습니다.
+로컬 개발 데이터가 필요 없으면 `docker compose down -v`로 볼륨을 지운 뒤 다시 올리고, 데이터 보존이 필요하면 `pg_upgrade` 또는 dump/restore 절차를 사용합니다.
 
 필요하면 백그라운드 실행도 가능합니다.
 
@@ -246,7 +253,8 @@ docker compose up -d --build
 
 이 `docker compose`는 내부적으로 다음 구성을 사용합니다.
 
-- `postgres:16-alpine`
+- `postgres:18-alpine`
+- `redis:8.4.2-alpine`
 - `backend` 애플리케이션 컨테이너
 - `docker` 프로필 기반 Spring Boot 실행
 - `actuator/health` 기반 헬스체크
@@ -257,6 +265,7 @@ docker compose up -d --build
 - API 서버: `http://localhost:9090`
 - Swagger UI: `http://localhost:9090/docs/swagger-ui.html`
 - PostgreSQL: `localhost:5432`
+- Redis: `localhost:6379`
 
 기본 개발용 샘플 데이터와 관리자 계정도 함께 사용할 수 있습니다.
 
@@ -267,6 +276,7 @@ docker compose up -d --build
 
 - `BACKEND_PORT`: 백엔드 외부 포트
 - `POSTGRES_PORT`: PostgreSQL 외부 포트
+- `REDIS_PORT`: Redis 외부 포트
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`: DB 접속 정보
 - `JWT_SECRET`: JWT 서명 키
 - `APP_SAMPLE_EVENTS_ENABLED`: 샘플 이벤트 데이터 생성 여부

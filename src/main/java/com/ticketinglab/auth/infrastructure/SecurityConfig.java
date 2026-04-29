@@ -1,5 +1,6 @@
 package com.ticketinglab.auth.infrastructure;
 
+import com.ticketinglab.auth.domain.TokenSessionRepository;
 import com.ticketinglab.auth.infrastructure.jwt.JwtAuthenticationFilter;
 import com.ticketinglab.auth.infrastructure.jwt.JwtTokenProvider;
 import jakarta.servlet.DispatcherType;
@@ -26,6 +27,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenSessionRepository tokenSessionRepository;
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -73,7 +75,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(jwtTokenProvider),
+                        new JwtAuthenticationFilter(jwtTokenProvider, tokenSessionRepository),
                         UsernamePasswordAuthenticationFilter.class
                 );
 

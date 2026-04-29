@@ -2,7 +2,10 @@ package com.ticketinglab.checkin.presentation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ticketinglab.auth.domain.TokenSession;
+import com.ticketinglab.auth.domain.TokenSessionRepository;
 import com.ticketinglab.auth.infrastructure.jwt.JwtTokenProvider;
+import com.ticketinglab.auth.presentation.dto.TokenPair;
 import com.ticketinglab.checkin.presentation.dto.CheckinRequest;
 import com.ticketinglab.event.domain.Event;
 import com.ticketinglab.event.domain.EventRepository;
@@ -77,6 +80,9 @@ class CheckinControllerIntegrationTest {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private TokenSessionRepository tokenSessionRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -242,7 +248,12 @@ class CheckinControllerIntegrationTest {
         User user = "ADMIN".equals(role)
                 ? userRepository.save(User.createAdmin(email, passwordEncoder.encode("password123")))
                 : userRepository.save(User.createUser(email, passwordEncoder.encode("password123")));
-        return jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
+        TokenPair tokens = jwtTokenProvider.createTokens(user.getId(), user.getEmail(), user.getRole());
+        tokenSessionRepository.save(
+                TokenSession.issue(user.getId(), tokens.accessToken(), tokens.refreshToken()),
+                jwtTokenProvider.getRefreshTokenTtl()
+        );
+        return tokens.accessToken();
     }
 
     private JsonNode body(MvcResult result) throws Exception {

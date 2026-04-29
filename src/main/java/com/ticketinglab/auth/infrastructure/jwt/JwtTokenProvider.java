@@ -13,6 +13,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
@@ -83,6 +84,10 @@ public class JwtTokenProvider {
 
     public Long getUserId(String token) {
         return Long.valueOf(parseClaims(token).getSubject());
+    }
+
+    public Duration getRefreshTokenTtl() {
+        return Duration.ofDays(refreshExpDays);
     }
 
     public Authentication getAuthentication(String token) {

@@ -9,7 +9,10 @@ import com.ticketinglab.admin.presentation.dto.CreateShowSeatsRequest;
 import com.ticketinglab.admin.presentation.dto.RegisterVenueSectionsRequest;
 import com.ticketinglab.admin.presentation.dto.RegisterVenueSeatsRequest;
 import com.ticketinglab.admin.presentation.dto.VenueUpsertRequest;
+import com.ticketinglab.auth.domain.TokenSession;
+import com.ticketinglab.auth.domain.TokenSessionRepository;
 import com.ticketinglab.auth.infrastructure.jwt.JwtTokenProvider;
+import com.ticketinglab.auth.presentation.dto.TokenPair;
 import com.ticketinglab.event.domain.Event;
 import com.ticketinglab.event.domain.EventRepository;
 import com.ticketinglab.event.domain.EventStatus;
@@ -82,6 +85,9 @@ class AdminControllerIntegrationTest {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private TokenSessionRepository tokenSessionRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -439,7 +445,12 @@ class AdminControllerIntegrationTest {
             default -> userRepository.save(User.createUser(email, passwordHash));
         };
 
-        return jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
+        TokenPair tokens = jwtTokenProvider.createTokens(user.getId(), user.getEmail(), user.getRole());
+        tokenSessionRepository.save(
+                TokenSession.issue(user.getId(), tokens.accessToken(), tokens.refreshToken()),
+                jwtTokenProvider.getRefreshTokenTtl()
+        );
+        return tokens.accessToken();
     }
 
     private Long createVenue(String adminToken, String code, String name) throws Exception {

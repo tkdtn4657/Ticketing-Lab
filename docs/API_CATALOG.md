@@ -7,6 +7,8 @@
 - Swagger 문서는 `/api/**`만 노출하며 Bearer 인증을 기본으로 적용한다.
 - 공개 API는 `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/refresh`, `GET /api/events`, `GET /api/events/{eventId}`, `GET /api/shows/{showId}/availability` 이다.
 - 로그인/토큰 재발급 응답은 `Authorization: Bearer ...` 헤더와 `refresh-token` HttpOnly Cookie를 함께 내려준다.
+- 토큰 세션은 Redis에서 userId 기준 단일 세션으로 관리한다. 새 로그인 또는 refresh 성공 시 기존 access/refresh token은 현재 세션에서 제외된다.
+- Access Token 기본 유효 시간은 5시간이며, 만료 후에는 현재 Refresh Token으로 `POST /api/auth/refresh`를 호출해 Access/Refresh Token을 함께 갱신한다.
 - 결제 승인 API는 `Idempotency-Key` 헤더가 반드시 필요하다.
 - Swagger 예시는 통합 테스트와 정적 테스트 페이지(`auth-test.html`, `events-test.html`, `shows-test.html`, `holds-test.html`, `reservations-test.html`, `payments-test.html`, `checkin-test.html`, `admin-test.html`)를 기준으로 정리했다.
 
@@ -18,9 +20,9 @@
 | 도메인 | ID | 메서드 | 경로 | 인증 | 목적 | 요청 | 응답 | 우선순위 | 상태 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Auth | AUTH-001 | POST | `/api/auth/signup` | 없음 | 회원가입 | `email`, `password` | `userId` | P0 | 구현완료 |
-| Auth | AUTH-002 | POST | `/api/auth/login` | 없음 | 로그인 및 JWT 발급 | `email`, `password` | `Authorization 헤더`, `accessToken`, `refreshToken`, `refresh-token Cookie` | P0 | 구현완료 |
-| Auth | AUTH-003 | POST | `/api/auth/refresh` | 없음 | 토큰 재발급 | `refreshToken` | `Authorization 헤더`, `accessToken`, `refreshToken`, `refresh-token Cookie` | P0 | 구현완료 |
-| Auth | AUTH-004 | POST | `/api/auth/logout` | USER | 로그아웃 | `refreshToken` | `204`, `refresh-token Cookie 삭제` | P1 | 구현완료 |
+| Auth | AUTH-002 | POST | `/api/auth/login` | 없음 | 로그인 및 JWT 발급, Redis 단일 세션 교체 | `email`, `password` | `Authorization 헤더`, `accessToken`, `refreshToken`, `refresh-token Cookie` | P0 | 구현완료 |
+| Auth | AUTH-003 | POST | `/api/auth/refresh` | 없음 | 현재 refresh token 검증 후 access/refresh 동시 재발급 | `refreshToken` | `Authorization 헤더`, `accessToken`, `refreshToken`, `refresh-token Cookie` | P0 | 구현완료 |
+| Auth | AUTH-004 | POST | `/api/auth/logout` | USER | Redis 토큰 세션 삭제 | `refreshToken` | `204`, `refresh-token Cookie 삭제` | P1 | 구현완료 |
 | Auth | AUTH-005 | GET | `/api/auth/me` | USER | 내 정보 조회 | - | `userId`, `email`, `role` | P1 | 구현완료 |
 | OAuth2 | OAUTH-001 | GET | `/api/oauth2/authorize/{provider}` | 없음 | OAuth2 로그인 시작 | `provider` | `302 redirect` | P0 | 예정 |
 | OAuth2 | OAUTH-002 | GET | `/api/oauth2/callback/{provider}` | 없음 | OAuth2 콜백 및 JWT 발급 | `code`, `state` | `accessToken`, `refreshToken` | P0 | 예정 |
