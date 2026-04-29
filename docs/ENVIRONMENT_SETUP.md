@@ -54,6 +54,7 @@ docker compose up --build
 ## 인증 토큰 세션 저장소
 - 기본 토큰 세션 저장소는 Redis이며 `app.auth.token-session.store=redis`로 동작한다.
 - 자동화 테스트에서는 외부 Redis에 의존하지 않도록 `app.auth.token-session.store=in-memory`를 사용한다.
+- Redis 연결 타임아웃은 기본 3초, 명령 실행 타임아웃은 기본 2초이며 `REDIS_CONNECT_TIMEOUT`, `REDIS_TIMEOUT`으로 조정할 수 있다.
 - 로그인 성공 시 Redis에는 `auth:user:sessions:{userId}` Sorted Set에 refresh token id가 추가되고, 세션 본문은 `auth:session:{userId}:{refreshTokenId}`로 저장된다.
 - 사용자별 토큰 세션은 기본 5개까지 유지하며, 한도를 넘으면 가장 오래된 세션과 해당 access token 인덱스를 함께 제거한다.
 - refresh 성공 시 기존 refresh token 세션은 새 access/refresh token 세션으로 원자적으로 교체된다.
