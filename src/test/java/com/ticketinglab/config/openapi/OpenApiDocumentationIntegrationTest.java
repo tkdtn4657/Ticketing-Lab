@@ -30,6 +30,18 @@ class OpenApiDocumentationIntegrationTest {
                 .andExpect(jsonPath("$.info.title").value("Ticketing Lab API"))
                 .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.scheme").value("bearer"))
                 .andExpect(jsonPath("$.paths['/api/auth/login'].post.tags[0]").value("Auth"))
+                .andExpect(jsonPath("$.paths['/api/auth/login'].post.summary").value("로그인"))
+                .andExpect(jsonPath("$.paths['/api/auth/login'].post.requestBody.description").value("로그인 요청"))
+                .andExpect(jsonPath("$.paths['/api/auth/login'].post.responses['200'].headers.Authorization.description")
+                        .value("Bearer Access Token"))
+                .andExpect(jsonPath("$.paths['/api/admin/venues/upsert'].post.summary").value("공연장 등록/수정"))
+                .andExpect(jsonPath("$.paths['/api/master/venues'].get.summary").value("전체 공연장 목록 조회"))
+                .andExpect(jsonPath("$.paths['/api/events'].get.summary").value("이벤트 목록 조회"))
+                .andExpect(jsonPath("$.paths['/api/shows/{showId}/availability'].get.summary").value("회차 가용성 조회"))
+                .andExpect(jsonPath("$.paths['/api/holds'].post.summary").value("홀드 생성"))
+                .andExpect(jsonPath("$.paths['/api/reservations'].post.summary").value("예약 생성"))
+                .andExpect(jsonPath("$.paths['/api/payments/confirm'].post.summary").value("결제 승인"))
+                .andExpect(jsonPath("$.paths['/api/me/tickets'].get.summary").value("내 티켓 목록 조회"))
                 .andExpect(jsonPath("$.paths['/api/checkin'].post.summary").value("체크인 처리"));
     }
 
