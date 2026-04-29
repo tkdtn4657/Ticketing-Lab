@@ -11,6 +11,7 @@
 - `src/main/resources/application-local-secret.example.yml`을 참고해 `src/main/resources/application-local-secret.yml`을 만든다.
 - `jwt.secret`에는 Base64로 인코딩된 32바이트 이상 비밀키를 넣는다.
 - DB 접속 정보는 기본값을 그대로 쓰거나 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` 환경변수로 덮어쓴다.
+- Redis 접속 정보는 기본값 `localhost:6379`를 사용하거나 `REDIS_HOST`, `REDIS_PORT` 환경변수로 덮어쓴다.
 - `JWT_SECRET` 환경변수를 써도 되지만, 로컬에서는 `application-local-secret.yml`로 관리하는 편이 실수하기 덜 쉽다.
 
 ## 이벤트 샘플 데이터
@@ -36,7 +37,7 @@
 - CLI: `./gradlew bootRun --args='--spring.profiles.active=local'`로 실행한다.
 
 ## Docker Compose로 백엔드만 실행하는 방법
-- 백엔드 루트에는 PostgreSQL과 애플리케이션을 함께 올리는 `docker-compose.yml`이 있다.
+- 백엔드 루트에는 PostgreSQL, Redis, 애플리케이션을 함께 올리는 `docker-compose.yml`이 있다.
 - 먼저 `.env.example`을 복사해서 `.env`를 만든다.
 - 기본값만으로도 로컬 개발용 실행이 가능하지만, `JWT_SECRET`은 필요 시 원하는 값으로 바꿔도 된다.
 
@@ -45,10 +46,19 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-- 기본 포트는 `9090`(backend), `5432`(postgres) 이다.
+- 기본 포트는 `9090`(backend), `5432`(postgres), `6379`(redis) 이다.
 - Docker Compose 실행 시 애플리케이션은 `docker` 프로필로 구동된다.
 - `docker` 프로필에서도 샘플 이벤트 데이터와 로컬 관리자 계정을 사용할 수 있다.
 - 관리자 계정 기본값은 `admin@example.com` / `admin1234` 이다.
+
+## 인증 토큰 세션 저장소
+- 기본 토큰 세션 저장소는 Redis이며 `app.auth.token-session.store=redis`로 동작한다.
+- 자동화 테스트에서는 외부 Redis에 의존하지 않도록 `app.auth.token-session.store=in-memory`를 사용한다.
+- Redis 연결 타임아웃은 기본 3초, 명령 실행 타임아웃은 기본 2초이며 `REDIS_CONNECT_TIMEOUT`, `REDIS_TIMEOUT`으로 조정할 수 있다.
+- 로그인 성공 시 Redis에는 `auth:user:sessions:{userId}` Sorted Set에 refresh token id가 추가되고, 세션 본문은 `auth:session:{userId}:{refreshTokenId}`로 저장된다.
+- 사용자별 토큰 세션은 기본 5개까지 유지하며, 한도를 넘으면 가장 오래된 세션과 해당 access token 인덱스를 함께 제거한다.
+- refresh 성공 시 기존 refresh token 세션은 새 access/refresh token 세션으로 원자적으로 교체된다.
+- Access Token 만료 시간은 5시간, Refresh Token 만료 시간과 Redis 세션 TTL은 14일이다.
 
 ## Swagger / OpenAPI 확인 경로
 - Swagger UI: `/docs/swagger-ui.html`
@@ -72,3 +82,4 @@ docker compose up --build
 - `local` 프로필에서는 이벤트 샘플 데이터를 활성화한다.
 - `local` 프로필에서는 `spring.jpa.hibernate.ddl-auto=update`를 사용해 재시작 때마다 스키마를 다시 만들지 않도록 한다.
 - `local` 프로필에서는 DB 기본값을 로컬 개발용으로 제공하고, JWT 비밀키는 별도 파일이나 환경변수로만 받는다.
+- `local` 프로필에서는 Redis 기본값을 `localhost:6379`로 사용한다.

@@ -55,7 +55,7 @@
 
 선정 이유:
 
-- 현재 테스트 대상이 `브라우저 사용자 경험`이 아니라 `백엔드 HTTP API + PostgreSQL` 조합이기 때문이다.
+- 현재 테스트 대상이 `브라우저 사용자 경험`이 아니라 `백엔드 HTTP API + PostgreSQL + Redis` 조합이기 때문이다.
 - 인증, 조회, 홀드, 예약, 결제처럼 상태 전이와 토큰 흐름이 섞인 API 시나리오를 코드로 관리하는 편이 훨씬 읽기 쉽고 유지보수하기 쉽다.
 - 테스트 스크립트를 저장소에 같이 두고 diff, 리뷰, 재실행하기에 `k6`가 더 적합하다.
 - 응답 시간, 에러율, 체크 결과를 `threshold`로 남겨서 `이번 실행이 통과인지 실패인지`를 명확히 판단하기 좋다.
@@ -118,7 +118,7 @@
 - 목적:
   시나리오와 데이터 준비, 기본 동작, 실패 조건을 빠르게 검증한다.
 - 환경:
-  개발자 PC + 로컬 PostgreSQL 또는 Docker Compose
+  개발자 PC + 로컬 PostgreSQL/Redis 또는 Docker Compose
 - 특징:
   절대 수치보다 시나리오 유효성 검증이 목적이다.
 
@@ -129,7 +129,7 @@
 - 환경:
   workspace root `docker compose up --build`
 - 특징:
-  nginx 프록시, backend, postgres를 함께 본다.
+  nginx 프록시, backend, postgres, redis를 함께 본다.
 
 ### 3단계: 스테이징 유사 환경
 

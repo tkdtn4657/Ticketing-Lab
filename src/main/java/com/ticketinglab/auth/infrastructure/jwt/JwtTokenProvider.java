@@ -13,6 +13,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
@@ -35,6 +36,12 @@ public class JwtTokenProvider {
             @Value("${jwt.access-token-exp-min}") long accessExpMin,
             @Value("${jwt.refresh-token-exp-days}") long refreshExpDays
     ) {
+        if (accessExpMin <= 0) {
+            throw new IllegalStateException("jwt.access-token-exp-min must be greater than 0.");
+        }
+        if (refreshExpDays <= 0) {
+            throw new IllegalStateException("jwt.refresh-token-exp-days must be greater than 0.");
+        }
         this.key = createSigningKey(base64Secret);
         this.accessExpMin = accessExpMin;
         this.refreshExpDays = refreshExpDays;
@@ -83,6 +90,14 @@ public class JwtTokenProvider {
 
     public Long getUserId(String token) {
         return Long.valueOf(parseClaims(token).getSubject());
+    }
+
+    public String getTokenId(String token) {
+        return parseClaims(token).getId();
+    }
+
+    public Duration getRefreshTokenTtl() {
+        return Duration.ofDays(refreshExpDays);
     }
 
     public Authentication getAuthentication(String token) {

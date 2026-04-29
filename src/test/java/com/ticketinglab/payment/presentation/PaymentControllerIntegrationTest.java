@@ -2,7 +2,10 @@ package com.ticketinglab.payment.presentation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ticketinglab.auth.domain.TokenSession;
+import com.ticketinglab.auth.domain.TokenSessionRepository;
 import com.ticketinglab.auth.infrastructure.jwt.JwtTokenProvider;
+import com.ticketinglab.auth.presentation.dto.TokenPair;
 import com.ticketinglab.event.domain.Event;
 import com.ticketinglab.event.domain.EventRepository;
 import com.ticketinglab.event.domain.EventStatus;
@@ -29,6 +32,7 @@ import com.ticketinglab.venue.domain.Seat;
 import com.ticketinglab.venue.domain.SeatRepository;
 import com.ticketinglab.venue.domain.Section;
 import com.ticketinglab.venue.domain.SectionRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +45,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -95,7 +100,18 @@ class PaymentControllerIntegrationTest {
     private JwtTokenProvider jwtTokenProvider;
 
     @Autowired
+    private TokenSessionRepository tokenSessionRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
+
+    private final List<Long> createdUserIds = new ArrayList<>();
+
+    @AfterEach
+    void clearTokenSessions() {
+        createdUserIds.forEach(tokenSessionRepository::deleteByUserId);
+        createdUserIds.clear();
+    }
 
     @Test
     @DisplayName("PAY-001 POST /api/payments/confirm marks reservation paid and issues tickets")
@@ -289,8 +305,19 @@ class PaymentControllerIntegrationTest {
     private UserSession createUserSession() {
         String email = "payment" + System.nanoTime() + "@example.com";
         User user = userRepository.save(User.createUser(email, passwordEncoder.encode("password123")));
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
-        return new UserSession(user.getId(), accessToken);
+        createdUserIds.add(user.getId());
+        TokenPair tokens = jwtTokenProvider.createTokens(user.getId(), user.getEmail(), user.getRole());
+        tokenSessionRepository.save(
+                TokenSession.issue(
+                        user.getId(),
+                        jwtTokenProvider.getTokenId(tokens.accessToken()),
+                        tokens.accessToken(),
+                        jwtTokenProvider.getTokenId(tokens.refreshToken()),
+                        tokens.refreshToken()
+                ),
+                jwtTokenProvider.getRefreshTokenTtl()
+        );
+        return new UserSession(user.getId(), tokens.accessToken());
     }
 
     private JsonNode body(MvcResult result) throws Exception {

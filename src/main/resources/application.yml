@@ -5,6 +5,13 @@ spring:
   datasource:
     driver-class-name: org.postgresql.Driver
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:3s}
+      timeout: ${REDIS_TIMEOUT:2s}
+
   jpa:
     hibernate:
       ddl-auto: create
@@ -50,10 +57,14 @@ springdoc:
 
 jwt:
   secret: ${JWT_SECRET}
-  access-token-exp-min: 15
+  access-token-exp-min: 300
   refresh-token-exp-days: 14
 
 app:
+  auth:
+    token-session:
+      store: ${TOKEN_SESSION_STORE:redis}
+      max-sessions-per-user: ${TOKEN_SESSION_MAX_SESSIONS_PER_USER:5}
   hold:
     ttl-minutes: 5
   reservation:

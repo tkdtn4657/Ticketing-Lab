@@ -37,6 +37,15 @@
 - `payments(id, reservation_id, provider, idempotency_key, status, amount, approved_at, raw_payload)`
 - `tickets(id uuid, reservation_item_id, serial, qr_token, status, used_at, created_at)`
 
+### 인증 / 토큰 세션
+- Refresh token은 RDBMS 테이블에 저장하지 않고 Redis에서 관리한다.
+- Redis는 `auth:user:sessions:{userId}` Sorted Set으로 사용자별 refresh token id를 최대 5개까지 관리한다.
+- 세션 본문은 `auth:session:{userId}:{refreshTokenId}`에 저장하고, access token 검증용 인덱스는 `auth:access:{userId}:{accessTokenId}`로 관리한다.
+- 로그인 성공 시 새 세션을 추가하고, 한도를 넘으면 가장 오래된 세션을 제거한다.
+- refresh 성공 시 기존 refresh token 세션은 새 access/refresh token 세션으로 원자적으로 교체한다.
+- Access token은 5시간 동안 유효하며, 인증 필터는 JWT 검증 후 Redis access token 인덱스와 세션 본문이 일치할 때만 인증을 세팅한다.
+- Refresh token은 14일 동안 유효하며, access token 만료 후에도 `POST /api/auth/refresh`에서 현재 refresh token을 직접 제출해 access/refresh를 함께 갱신한다.
+
 ## 상태 전이
 - Hold: `ACTIVE -> CONVERTED | CANCELED | EXPIRED`
 - Reservation: `PENDING_PAYMENT -> PAID | CANCELED | EXPIRED`
