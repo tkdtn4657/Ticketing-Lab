@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -59,7 +60,7 @@ public interface AdminApiDocs {
     })
     ResponseEntity<VenueUpsertResponse> upsertVenue(
             @Parameter(hidden = true) Authentication authentication,
-            VenueUpsertRequest request
+            @Valid VenueUpsertRequest request
     );
 
     @Operation(summary = "내 공연장 목록 조회", description = "ADM-010. 현재 관리자가 생성한 공연장 목록을 조회합니다.")
@@ -128,7 +129,7 @@ public interface AdminApiDocs {
     ResponseEntity<CreatedCountResponse> createSeats(
             @Parameter(description = "공연장 ID", example = "1")
             Long venueId,
-            RegisterVenueSeatsRequest request
+            @Valid RegisterVenueSeatsRequest request
     );
 
     @Operation(summary = "공연장 구역 기준정보 조회", description = "ADM-009. 공연장에 등록된 구역 마스터 정보를 조회합니다.")
@@ -180,7 +181,7 @@ public interface AdminApiDocs {
     ResponseEntity<CreatedCountResponse> createSections(
             @Parameter(description = "공연장 ID", example = "1")
             Long venueId,
-            RegisterVenueSectionsRequest request
+            @Valid RegisterVenueSectionsRequest request
     );
 
     @Operation(summary = "이벤트 생성", description = "ADM-004. 이벤트 제목, 설명, 상태를 받아 이벤트를 생성합니다.")
@@ -209,7 +210,7 @@ public interface AdminApiDocs {
     })
     ResponseEntity<CreateEventResponse> createEvent(
             @Parameter(hidden = true) Authentication authentication,
-            CreateEventRequest request
+            @Valid CreateEventRequest request
     );
 
     @Operation(summary = "내 이벤트 목록 조회", description = "ADM-011. 현재 관리자가 생성한 이벤트 목록을 조회합니다.")
@@ -256,7 +257,7 @@ public interface AdminApiDocs {
     })
     ResponseEntity<CreateShowResponse> createShow(
             @Parameter(hidden = true) Authentication authentication,
-            CreateShowRequest request
+            @Valid CreateShowRequest request
     );
 
     @Operation(summary = "내 회차 목록 조회", description = "ADM-012. 현재 관리자가 생성한 회차 목록을 조회합니다.")
@@ -305,7 +306,7 @@ public interface AdminApiDocs {
     ResponseEntity<CreatedCountResponse> createShowSeats(
             @Parameter(description = "회차 ID", example = "200")
             Long showId,
-            CreateShowSeatsRequest request
+            @Valid CreateShowSeatsRequest request
     );
 
     @Operation(summary = "회차 구역 재고 생성", description = "ADM-007. 회차별 구역 가격과 수량 정보를 일괄 생성합니다.")
@@ -337,6 +338,6 @@ public interface AdminApiDocs {
     ResponseEntity<CreatedCountResponse> createShowSectionInventories(
             @Parameter(description = "회차 ID", example = "200")
             Long showId,
-            CreateShowSectionInventoriesRequest request
+            @Valid CreateShowSectionInventoriesRequest request
     );
 }

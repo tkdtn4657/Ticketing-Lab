@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -49,7 +50,7 @@ public interface AuthApiDocs {
             @ApiResponse(responseCode = "400", description = "이메일 또는 비밀번호를 확인해주세요.")
     })
     @SecurityRequirements
-    ResponseEntity<SignupResponse> signup(SignupRequest req);
+    ResponseEntity<SignupResponse> signup(@Valid SignupRequest req);
 
     @Operation(summary = "로그인", description = "AUTH-002. 로그인 성공 시 Access Token과 Refresh Token을 함께 반환합니다.")
     @RequestBody(
@@ -87,7 +88,7 @@ public interface AuthApiDocs {
             @ApiResponse(responseCode = "400", description = "요청 형식이 올바르지 않습니다.")
     })
     @SecurityRequirements
-    ResponseEntity<TokenPair> login(LoginRequest req);
+    ResponseEntity<TokenPair> login(@Valid LoginRequest req);
 
     @Operation(summary = "토큰 재발급", description = "AUTH-003. Refresh Token을 검증하고 Access Token과 Refresh Token을 함께 재발급합니다.")
     @RequestBody(
@@ -125,7 +126,7 @@ public interface AuthApiDocs {
             @ApiResponse(responseCode = "400", description = "요청 형식이 올바르지 않습니다.")
     })
     @SecurityRequirements
-    ResponseEntity<TokenPair> refresh(RefreshTokenRequest req);
+    ResponseEntity<TokenPair> refresh(@Valid RefreshTokenRequest req);
 
     @Operation(summary = "로그아웃", description = "AUTH-004. 현재 사용자 기준으로 Refresh Token을 무효화하고 쿠키를 삭제합니다.")
     @RequestBody(
@@ -150,7 +151,10 @@ public interface AuthApiDocs {
             @ApiResponse(responseCode = "401", description = "인증 정보 또는 Refresh Token이 유효하지 않습니다."),
             @ApiResponse(responseCode = "400", description = "요청 형식이 올바르지 않습니다.")
     })
-    ResponseEntity<Void> logout(@Parameter(hidden = true) Authentication authentication, RefreshTokenRequest req);
+    ResponseEntity<Void> logout(
+            @Parameter(hidden = true) Authentication authentication,
+            @Valid RefreshTokenRequest req
+    );
 
     @Operation(summary = "내 정보 조회", description = "AUTH-005. 현재 인증된 사용자의 기본 정보를 조회합니다.")
     @ApiResponses({
