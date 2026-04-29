@@ -1,7 +1,7 @@
 package com.ticketinglab.auth.application;
 
-import com.ticketinglab.auth.domain.RefreshToken;
-import com.ticketinglab.auth.domain.RefreshTokenRepository;
+import com.ticketinglab.auth.domain.TokenSession;
+import com.ticketinglab.auth.domain.TokenSessionRepository;
 import com.ticketinglab.auth.infrastructure.jwt.JwtTokenProvider;
 import com.ticketinglab.auth.presentation.dto.LoginRequest;
 import com.ticketinglab.auth.presentation.dto.TokenPair;
@@ -20,7 +20,7 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 public class LoginUseCase {
 
     private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final TokenSessionRepository tokenSessionRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -39,7 +39,10 @@ public class LoginUseCase {
                 user.getRole()
         );
 
-        refreshTokenRepository.save(RefreshToken.issue(tokens.refreshToken(), user.getId()));
+        tokenSessionRepository.save(
+                TokenSession.issue(user.getId(), tokens.accessToken(), tokens.refreshToken()),
+                jwtTokenProvider.getRefreshTokenTtl()
+        );
         return tokens;
     }
 }

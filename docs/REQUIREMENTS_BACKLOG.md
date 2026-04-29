@@ -12,10 +12,10 @@
 | Common | REQ-COM-003 | 시간 표현 일관성 | ISO-8601, Asia/Seoul 기준으로 일관되게 반환한다 | P1 | 예정 | |
 | Common | REQ-COM-004 | Swagger/OpenAPI 문서 | 구현 완료 API가 Swagger UI와 OpenAPI JSON/YAML에서 탐색 가능하고 Bearer 인증 및 예시를 제공한다 | P1 | 구현완료 | `/docs/swagger-ui.html` |
 | Auth | REQ-AUTH-001 | 회원가입 | 이메일 unique, BCrypt 해시, 기본 USER role | P0 | 구현완료 | |
-| Auth | REQ-AUTH-002 | 로그인 | email/password로 access/refresh 발급 | P0 | 구현완료 | |
-| Auth | REQ-AUTH-003 | JWT 인증 필터 | Bearer 토큰 검증 및 SecurityContext 세팅 | P0 | 구현완료 | |
-| Auth | REQ-AUTH-004 | Refresh 재발급 | refresh로 access 재발급, 토큰 회전 처리 | P0 | 구현완료 | rotation |
-| Auth | REQ-AUTH-005 | 로그아웃 | refresh 토큰 무효 처리 | P1 | 구현완료 | DB revoke |
+| Auth | REQ-AUTH-002 | 로그인 | email/password로 access/refresh 발급, Redis 단일 세션 저장 | P0 | 구현완료 | 새 로그인 시 기존 세션 교체 |
+| Auth | REQ-AUTH-003 | JWT 인증 필터 | Bearer 토큰 검증 및 Redis 현재 access token 확인 후 SecurityContext 세팅 | P0 | 구현완료 | |
+| Auth | REQ-AUTH-004 | Refresh 재발급 | 현재 refresh로 access/refresh 동시 재발급, 토큰 회전 처리 | P0 | 구현완료 | Redis rotation |
+| Auth | REQ-AUTH-005 | 로그아웃 | Redis 토큰 세션 삭제 | P1 | 구현완료 | Redis revoke |
 | Auth | REQ-AUTH-006 | 권한 분리 | USER/ADMIN API 접근 제어 | P0 | 구현완료 | `/api/admin/**`, `/api/checkin` ADMIN 제한 |
 | OAuth2 | REQ-OAUTH-001 | OAuth2 로그인 시작 | provider별 authorize redirect 제공 | P0 | 예정 | Google/Kakao |
 | OAuth2 | REQ-OAUTH-002 | OAuth2 콜백 처리 | code 교환, 사용자 조회/생성, JWT 발급 | P0 | 예정 | |

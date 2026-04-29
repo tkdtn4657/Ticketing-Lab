@@ -29,10 +29,13 @@ springdoc:
 
 jwt:
   secret: "dGVzdC1zZWNyZXQtbXVzdC1iZS1hdC1sZWFzdC0zMi1ieXRlcyEh"
-  access-token-exp-min: 15
+  access-token-exp-min: 300
   refresh-token-exp-days: 14
 
 app:
+  auth:
+    token-session:
+      store: in-memory
   hold:
     ttl-minutes: 5
   reservation:

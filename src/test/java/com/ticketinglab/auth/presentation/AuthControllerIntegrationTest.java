@@ -75,6 +75,33 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("AUTH-002 login replaces previous token session")
+    void auth002_login_replacesPreviousTokenSession() throws Exception {
+        Credentials credentials = newCredentials();
+        Long userId = signup(credentials);
+
+        TokenBundle firstTokens = login(credentials);
+        TokenBundle secondTokens = login(credentials);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(json(new RefreshTokenRequest(firstTokens.refreshToken()))))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/auth/me")
+                        .header("Authorization", "Bearer " + firstTokens.accessToken())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/auth/me")
+                        .header("Authorization", "Bearer " + secondTokens.accessToken())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(userId));
+    }
+
+    @Test
     @DisplayName("AUTH-003 POST /api/auth/refresh rotates refreshToken and returns new tokens")
     void auth003_refresh_rotatesRefreshToken() throws Exception {
         AuthSession session = signupAndLogin();

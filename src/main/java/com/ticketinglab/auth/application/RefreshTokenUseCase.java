@@ -1,7 +1,7 @@
 package com.ticketinglab.auth.application;
 
-import com.ticketinglab.auth.domain.RefreshToken;
-import com.ticketinglab.auth.domain.RefreshTokenRepository;
+import com.ticketinglab.auth.domain.TokenSession;
+import com.ticketinglab.auth.domain.TokenSessionRepository;
 import com.ticketinglab.auth.infrastructure.jwt.JwtTokenProvider;
 import com.ticketinglab.auth.presentation.dto.TokenPair;
 import com.ticketinglab.user.domain.User;
@@ -19,7 +19,7 @@ public class RefreshTokenUseCase {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final TokenSessionRepository tokenSessionRepository;
 
     @Transactional
     public TokenPair execute(String refreshToken) {
@@ -27,21 +27,21 @@ public class RefreshTokenUseCase {
             throw new ResponseStatusException(UNAUTHORIZED, "invalid refresh token");
         }
 
-        RefreshToken savedRefreshToken = refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "invalid refresh token"));
-
         Long userId = jwtTokenProvider.getUserId(refreshToken);
-        if (!userId.equals(savedRefreshToken.getUserId())) {
+        TokenSession tokenSession = tokenSessionRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "invalid refresh token"));
+        if (!tokenSession.hasRefreshToken(refreshToken)) {
             throw new ResponseStatusException(UNAUTHORIZED, "invalid refresh token");
         }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "invalid refresh token"));
 
-        refreshTokenRepository.deleteByToken(refreshToken);
-
         TokenPair newTokens = jwtTokenProvider.createTokens(user.getId(), user.getEmail(), user.getRole());
-        refreshTokenRepository.save(RefreshToken.issue(newTokens.refreshToken(), user.getId()));
+        tokenSessionRepository.save(
+                TokenSession.issue(user.getId(), newTokens.accessToken(), newTokens.refreshToken()),
+                jwtTokenProvider.getRefreshTokenTtl()
+        );
 
         return newTokens;
     }

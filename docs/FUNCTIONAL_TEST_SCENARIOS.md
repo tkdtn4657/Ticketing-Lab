@@ -77,7 +77,7 @@
 
 ### 환경 준비
 
-- 로컬 PostgreSQL 또는 Docker Compose 환경 준비
+- 로컬 PostgreSQL/Redis 또는 Docker Compose 환경 준비
 - JWT 비밀키 설정
 - 필요 시 `local` 프로필 활성화
 
@@ -154,6 +154,7 @@
   `200 OK`
   `Authorization` 헤더 반환
   `refresh-token` Cookie 또는 응답 body 반환
+  Redis 단일 세션이 userId 기준으로 갱신됨
 
 ### FUNC-AUTH-004 로그인 실패
 
@@ -174,6 +175,7 @@
   `200 OK`
   새 Access Token 발급
   새 Refresh Token 발급
+  이전 Refresh Token 재사용 시 실패
 
 ### FUNC-AUTH-006 로그아웃 성공
 
@@ -183,7 +185,7 @@
   `POST /api/auth/logout`
 - 기대 결과:
   `204 No Content`
-  refresh token 삭제 처리
+  Redis 토큰 세션 삭제 처리
 
 ### FUNC-AUTH-007 내 정보 조회
 

@@ -2,7 +2,10 @@ package com.ticketinglab.reservation.presentation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ticketinglab.auth.domain.TokenSession;
+import com.ticketinglab.auth.domain.TokenSessionRepository;
 import com.ticketinglab.auth.infrastructure.jwt.JwtTokenProvider;
+import com.ticketinglab.auth.presentation.dto.TokenPair;
 import com.ticketinglab.event.domain.Event;
 import com.ticketinglab.event.domain.EventRepository;
 import com.ticketinglab.event.domain.EventStatus;
@@ -87,6 +90,9 @@ class ReservationControllerIntegrationTest {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private TokenSessionRepository tokenSessionRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -341,8 +347,12 @@ class ReservationControllerIntegrationTest {
     private UserSession createUserSession() {
         String email = "reservation" + System.nanoTime() + "@example.com";
         User user = userRepository.save(User.createUser(email, passwordEncoder.encode("password123")));
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
-        return new UserSession(user.getId(), accessToken);
+        TokenPair tokens = jwtTokenProvider.createTokens(user.getId(), user.getEmail(), user.getRole());
+        tokenSessionRepository.save(
+                TokenSession.issue(user.getId(), tokens.accessToken(), tokens.refreshToken()),
+                jwtTokenProvider.getRefreshTokenTtl()
+        );
+        return new UserSession(user.getId(), tokens.accessToken());
     }
 
     private JsonNode body(MvcResult result) throws Exception {
