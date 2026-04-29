@@ -14,6 +14,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -75,27 +78,57 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("AUTH-002 login replaces previous token session")
-    void auth002_login_replacesPreviousTokenSession() throws Exception {
+    @DisplayName("AUTH-002 login keeps multiple token sessions")
+    void auth002_login_keepsMultipleTokenSessions() throws Exception {
         Credentials credentials = newCredentials();
         Long userId = signup(credentials);
 
         TokenBundle firstTokens = login(credentials);
         TokenBundle secondTokens = login(credentials);
 
+        mockMvc.perform(get("/api/auth/me")
+                        .header("Authorization", "Bearer " + firstTokens.accessToken())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(userId));
+
+        mockMvc.perform(get("/api/auth/me")
+                        .header("Authorization", "Bearer " + secondTokens.accessToken())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(userId));
+
+        refresh(firstTokens.refreshToken());
+        refresh(secondTokens.refreshToken());
+    }
+
+    @Test
+    @DisplayName("AUTH-002 login keeps only latest five token sessions")
+    void auth002_login_keepsOnlyLatestFiveTokenSessions() throws Exception {
+        Credentials credentials = newCredentials();
+        Long userId = signup(credentials);
+        List<TokenBundle> tokens = new ArrayList<>();
+
+        for (int count = 0; count < 6; count++) {
+            tokens.add(login(credentials));
+        }
+
+        TokenBundle evictedTokens = tokens.get(0);
+        TokenBundle oldestRemainingTokens = tokens.get(1);
+
         mockMvc.perform(post("/api/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
-                        .content(json(new RefreshTokenRequest(firstTokens.refreshToken()))))
+                        .content(json(new RefreshTokenRequest(evictedTokens.refreshToken()))))
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(get("/api/auth/me")
-                        .header("Authorization", "Bearer " + firstTokens.accessToken())
+                        .header("Authorization", "Bearer " + evictedTokens.accessToken())
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(get("/api/auth/me")
-                        .header("Authorization", "Bearer " + secondTokens.accessToken())
+                        .header("Authorization", "Bearer " + oldestRemainingTokens.accessToken())
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value(userId));

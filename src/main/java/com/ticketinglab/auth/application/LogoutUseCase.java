@@ -1,6 +1,5 @@
 package com.ticketinglab.auth.application;
 
-import com.ticketinglab.auth.domain.TokenSession;
 import com.ticketinglab.auth.domain.TokenSessionRepository;
 import com.ticketinglab.auth.infrastructure.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -28,12 +27,13 @@ public class LogoutUseCase {
             throw new ResponseStatusException(UNAUTHORIZED, "invalid refresh token");
         }
 
-        TokenSession tokenSession = tokenSessionRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "invalid refresh token"));
-        if (!tokenSession.hasRefreshToken(refreshToken)) {
+        boolean deleted = tokenSessionRepository.deleteByRefreshToken(
+                userId,
+                jwtTokenProvider.getTokenId(refreshToken),
+                refreshToken
+        );
+        if (!deleted) {
             throw new ResponseStatusException(UNAUTHORIZED, "invalid refresh token");
         }
-
-        tokenSessionRepository.deleteByUserId(userId);
     }
 }

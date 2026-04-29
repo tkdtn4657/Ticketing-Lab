@@ -5,7 +5,9 @@ import java.security.MessageDigest;
 
 public record TokenSession(
         Long userId,
+        String accessTokenId,
         String accessToken,
+        String refreshTokenId,
         String refreshToken
 ) {
 
@@ -13,12 +15,20 @@ public record TokenSession(
         if (userId == null) {
             throw new IllegalArgumentException("userId is required.");
         }
+        accessTokenId = requireText(accessTokenId, "accessTokenId");
         accessToken = requireText(accessToken, "accessToken");
+        refreshTokenId = requireText(refreshTokenId, "refreshTokenId");
         refreshToken = requireText(refreshToken, "refreshToken");
     }
 
-    public static TokenSession issue(Long userId, String accessToken, String refreshToken) {
-        return new TokenSession(userId, accessToken, refreshToken);
+    public static TokenSession issue(
+            Long userId,
+            String accessTokenId,
+            String accessToken,
+            String refreshTokenId,
+            String refreshToken
+    ) {
+        return new TokenSession(userId, accessTokenId, accessToken, refreshTokenId, refreshToken);
     }
 
     public boolean hasAccessToken(String candidate) {

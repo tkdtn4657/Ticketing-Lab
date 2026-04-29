@@ -25,6 +25,7 @@ import com.ticketinglab.user.domain.User;
 import com.ticketinglab.user.domain.UserRepository;
 import com.ticketinglab.venue.domain.Seat;
 import com.ticketinglab.venue.domain.SeatRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -86,6 +88,14 @@ class CheckinControllerIntegrationTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    private final List<Long> createdUserIds = new ArrayList<>();
+
+    @AfterEach
+    void clearTokenSessions() {
+        createdUserIds.forEach(tokenSessionRepository::deleteByUserId);
+        createdUserIds.clear();
+    }
 
     @Test
     @DisplayName("CHK-001 POST /api/checkin marks ticket used and GET /api/me/tickets reflects USED")
@@ -248,9 +258,16 @@ class CheckinControllerIntegrationTest {
         User user = "ADMIN".equals(role)
                 ? userRepository.save(User.createAdmin(email, passwordEncoder.encode("password123")))
                 : userRepository.save(User.createUser(email, passwordEncoder.encode("password123")));
+        createdUserIds.add(user.getId());
         TokenPair tokens = jwtTokenProvider.createTokens(user.getId(), user.getEmail(), user.getRole());
         tokenSessionRepository.save(
-                TokenSession.issue(user.getId(), tokens.accessToken(), tokens.refreshToken()),
+                TokenSession.issue(
+                        user.getId(),
+                        jwtTokenProvider.getTokenId(tokens.accessToken()),
+                        tokens.accessToken(),
+                        jwtTokenProvider.getTokenId(tokens.refreshToken()),
+                        tokens.refreshToken()
+                ),
                 jwtTokenProvider.getRefreshTokenTtl()
         );
         return tokens.accessToken();

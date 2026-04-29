@@ -28,21 +28,33 @@ public class RefreshTokenUseCase {
         }
 
         Long userId = jwtTokenProvider.getUserId(refreshToken);
-        TokenSession tokenSession = tokenSessionRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "invalid refresh token"));
-        if (!tokenSession.hasRefreshToken(refreshToken)) {
-            throw new ResponseStatusException(UNAUTHORIZED, "invalid refresh token");
-        }
+        String refreshTokenId = jwtTokenProvider.getTokenId(refreshToken);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "invalid refresh token"));
 
         TokenPair newTokens = jwtTokenProvider.createTokens(user.getId(), user.getEmail(), user.getRole());
-        tokenSessionRepository.save(
-                TokenSession.issue(user.getId(), newTokens.accessToken(), newTokens.refreshToken()),
+        boolean rotated = tokenSessionRepository.rotateRefreshToken(
+                user.getId(),
+                refreshTokenId,
+                refreshToken,
+                createTokenSession(user.getId(), newTokens),
                 jwtTokenProvider.getRefreshTokenTtl()
         );
+        if (!rotated) {
+            throw new ResponseStatusException(UNAUTHORIZED, "invalid refresh token");
+        }
 
         return newTokens;
+    }
+
+    private TokenSession createTokenSession(Long userId, TokenPair tokens) {
+        return TokenSession.issue(
+                userId,
+                jwtTokenProvider.getTokenId(tokens.accessToken()),
+                tokens.accessToken(),
+                jwtTokenProvider.getTokenId(tokens.refreshToken()),
+                tokens.refreshToken()
+        );
     }
 }

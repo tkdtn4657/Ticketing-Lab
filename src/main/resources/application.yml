@@ -62,6 +62,7 @@ app:
   auth:
     token-session:
       store: ${TOKEN_SESSION_STORE:redis}
+      max-sessions-per-user: ${TOKEN_SESSION_MAX_SESSIONS_PER_USER:5}
   hold:
     ttl-minutes: 5
   reservation:

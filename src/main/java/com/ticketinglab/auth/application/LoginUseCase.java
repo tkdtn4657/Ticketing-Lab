@@ -40,9 +40,19 @@ public class LoginUseCase {
         );
 
         tokenSessionRepository.save(
-                TokenSession.issue(user.getId(), tokens.accessToken(), tokens.refreshToken()),
+                createTokenSession(user.getId(), tokens),
                 jwtTokenProvider.getRefreshTokenTtl()
         );
         return tokens;
+    }
+
+    private TokenSession createTokenSession(Long userId, TokenPair tokens) {
+        return TokenSession.issue(
+                userId,
+                jwtTokenProvider.getTokenId(tokens.accessToken()),
+                tokens.accessToken(),
+                jwtTokenProvider.getTokenId(tokens.refreshToken()),
+                tokens.refreshToken()
+        );
     }
 }

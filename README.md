@@ -276,7 +276,8 @@ docker compose up -d --build
 
 - `BACKEND_PORT`: 백엔드 외부 포트
 - `POSTGRES_PORT`: PostgreSQL 외부 포트
-- `REDIS_PORT`: Redis 외부 포트
+- `REDIS_HOST`, `REDIS_PORT`: Redis 접속 정보
+- `TOKEN_SESSION_MAX_SESSIONS_PER_USER`: 사용자별 유지할 토큰 세션 수
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`: DB 접속 정보
 - `JWT_SECRET`: JWT 서명 키
 - `APP_SAMPLE_EVENTS_ENABLED`: 샘플 이벤트 데이터 생성 여부

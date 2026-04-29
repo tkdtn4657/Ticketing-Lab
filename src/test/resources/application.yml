@@ -36,6 +36,7 @@ app:
   auth:
     token-session:
       store: in-memory
+      max-sessions-per-user: 5
   hold:
     ttl-minutes: 5
   reservation:

@@ -46,8 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isCurrentAccessToken(String token) {
         Long userId = tokenProvider.getUserId(token);
-        return tokenSessionRepository.findByUserId(userId)
-                .map(tokenSession -> tokenSession.hasAccessToken(token))
-                .orElse(false);
+        String accessTokenId = tokenProvider.getTokenId(token);
+        return tokenSessionRepository.hasAccessToken(userId, accessTokenId, token);
     }
 }

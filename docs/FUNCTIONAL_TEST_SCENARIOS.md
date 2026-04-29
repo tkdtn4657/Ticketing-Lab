@@ -154,7 +154,7 @@
   `200 OK`
   `Authorization` 헤더 반환
   `refresh-token` Cookie 또는 응답 body 반환
-  Redis 단일 세션이 userId 기준으로 갱신됨
+  Redis 토큰 세션이 userId 기준으로 추가되며 최신 5개까지만 유지됨
 
 ### FUNC-AUTH-004 로그인 실패
 
@@ -185,7 +185,7 @@
   `POST /api/auth/logout`
 - 기대 결과:
   `204 No Content`
-  Redis 토큰 세션 삭제 처리
+  요청 refresh token에 해당하는 Redis 토큰 세션 삭제 처리
 
 ### FUNC-AUTH-007 내 정보 조회
 
