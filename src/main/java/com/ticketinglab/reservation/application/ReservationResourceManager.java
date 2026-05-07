@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -116,14 +117,14 @@ public class ReservationResourceManager {
     private Set<Long> seatIdsOf(Reservation reservation) {
         return reservation.getItems().stream()
                 .map(ReservationItem::getSeatId)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }
 
     private Set<Long> sectionIdsOf(Reservation reservation) {
         return reservation.getItems().stream()
                 .map(ReservationItem::getSectionId)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }
 

@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -139,14 +140,14 @@ public class ConfirmPaymentUseCase {
     private Set<Long> seatIdsOf(Reservation reservation) {
         return reservation.getItems().stream()
                 .map(ReservationItem::getSeatId)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }
 
     private Set<Long> sectionIdsOf(Reservation reservation) {
         return reservation.getItems().stream()
                 .map(ReservationItem::getSectionId)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }
 }
