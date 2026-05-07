@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -79,14 +80,14 @@ public class CreateReservationUseCase {
     private Set<Long> seatIdsOf(Hold hold) {
         return hold.getItems().stream()
                 .map(HoldItem::getSeatId)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }
 
     private Set<Long> sectionIdsOf(Hold hold) {
         return hold.getItems().stream()
                 .map(HoldItem::getSectionId)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }
 }
