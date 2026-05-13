@@ -15,6 +15,7 @@ import com.ticketinglab.venue.domain.Seat;
 import com.ticketinglab.venue.domain.SeatRepository;
 import com.ticketinglab.venue.domain.Section;
 import com.ticketinglab.venue.domain.SectionRepository;
+import com.ticketinglab.venue.domain.SectionSaleType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -124,14 +125,16 @@ public class EventSampleDataInitializer implements ApplicationRunner {
     }
 
     private VenueInventoryFixture seedVenueInventoryFixture(Long venueId) {
-        Seat a1 = seatRepository.save(Seat.create("A1", 1, 1, venueId));
-        Seat a2 = seatRepository.save(Seat.create("A2", 1, 2, venueId));
-        Seat a3 = seatRepository.save(Seat.create("A3", 1, 3, venueId));
-        Seat b1 = seatRepository.save(Seat.create("B1", 2, 1, venueId));
-        Seat b2 = seatRepository.save(Seat.create("B2", 2, 2, venueId));
+        Section aSection = sectionRepository.save(Section.create("A", SectionSaleType.ASSIGNED_SEAT, venueId));
+        Section bSection = sectionRepository.save(Section.create("B", SectionSaleType.ASSIGNED_SEAT, venueId));
+        Section floor = sectionRepository.save(Section.create("FLOOR", SectionSaleType.GENERAL_ADMISSION, venueId));
+        Section balcony = sectionRepository.save(Section.create("BALCONY", SectionSaleType.GENERAL_ADMISSION, venueId));
 
-        Section floor = sectionRepository.save(Section.create("FLOOR", venueId));
-        Section balcony = sectionRepository.save(Section.create("BALCONY", venueId));
+        Seat a1 = seatRepository.save(Seat.create("A1", 1, 1, venueId, aSection));
+        Seat a2 = seatRepository.save(Seat.create("A2", 1, 2, venueId, aSection));
+        Seat a3 = seatRepository.save(Seat.create("A3", 1, 3, venueId, aSection));
+        Seat b1 = seatRepository.save(Seat.create("B1", 2, 1, venueId, bSection));
+        Seat b2 = seatRepository.save(Seat.create("B2", 2, 2, venueId, bSection));
 
         return new VenueInventoryFixture(a1, a2, a3, b1, b2, floor, balcony);
     }
