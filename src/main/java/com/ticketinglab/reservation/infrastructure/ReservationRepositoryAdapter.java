@@ -46,6 +46,16 @@ public class ReservationRepositoryAdapter implements ReservationRepository {
     }
 
     @Override
+    public List<String> findPendingExpiredIds(LocalDateTime now, int limit) {
+        return jpaRepository.findPendingExpiredIds(now, limit);
+    }
+
+    @Override
+    public List<String> findPendingExpiredIdsByShowId(Long showId, LocalDateTime now, int limit) {
+        return jpaRepository.findPendingExpiredIdsByShowId(showId, now, limit);
+    }
+
+    @Override
     public List<Reservation> findAllPendingExpiredByUserId(Long userId, LocalDateTime now) {
         return jpaRepository.findAllPendingExpiredByUserId(userId, now);
     }

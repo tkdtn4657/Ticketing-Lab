@@ -45,6 +45,9 @@ public class CreateShowSectionInventoriesUseCase {
         if (sections.size() != sectionIds.size()) {
             throw new ResponseStatusException(BAD_REQUEST, "invalid section ids");
         }
+        if (sections.stream().anyMatch(Section::isAssignedSeatType)) {
+            throw new ResponseStatusException(BAD_REQUEST, "assigned-seat section cannot have quantity inventory");
+        }
 
         if (!showSectionInventoryRepository.findAllByShowIdAndSectionIdIn(showId, sectionIds).isEmpty()) {
             throw new ResponseStatusException(CONFLICT, "show section inventory already exists");

@@ -10,7 +10,8 @@ public record RegisterVenueSectionsRequest(
         @NotEmpty List<@Valid SectionItem> sections
 ) {
     public record SectionItem(
-            @NotBlank String name
+            @NotBlank String name,
+            String saleType
     ) {
     }
 }

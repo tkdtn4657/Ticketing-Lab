@@ -26,6 +26,7 @@ import com.ticketinglab.venue.domain.Seat;
 import com.ticketinglab.venue.domain.SeatRepository;
 import com.ticketinglab.venue.domain.Section;
 import com.ticketinglab.venue.domain.SectionRepository;
+import com.ticketinglab.venue.domain.SectionSaleType;
 import com.ticketinglab.venue.domain.Venue;
 import com.ticketinglab.venue.domain.VenueRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -163,8 +164,8 @@ class AdminControllerIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json(new RegisterVenueSeatsRequest(
                                 List.of(
-                                        new RegisterVenueSeatsRequest.SeatItem("A1", 1, 1),
-                                        new RegisterVenueSeatsRequest.SeatItem("A2", 1, 2)
+                                        new RegisterVenueSeatsRequest.SeatItem("A1", 1, 1, null),
+                                        new RegisterVenueSeatsRequest.SeatItem("A2", 1, 2, null)
                                 )
                         ))))
                 .andExpect(status().isOk())
@@ -176,8 +177,8 @@ class AdminControllerIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json(new RegisterVenueSectionsRequest(
                                 List.of(
-                                        new RegisterVenueSectionsRequest.SectionItem("R"),
-                                        new RegisterVenueSectionsRequest.SectionItem("S")
+                                        new RegisterVenueSectionsRequest.SectionItem("R", "GENERAL_ADMISSION"),
+                                        new RegisterVenueSectionsRequest.SectionItem("S", "GENERAL_ADMISSION")
                                 )
                         ))))
                 .andExpect(status().isOk())
@@ -203,6 +204,61 @@ class AdminControllerIntegrationTest {
 
         assertThat(seatRepository.findAllByVenueIdAndLabelIn(venue.getId(), List.of("A1", "A2"))).hasSize(2);
         assertThat(sectionRepository.findAllByVenueIdAndNameIn(venue.getId(), List.of("R", "S"))).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("ADM section sale type separates assigned seats from quantity inventory")
+    void adminSectionSaleType_enforcesInventoryKind() throws Exception {
+        String adminToken = createAccessToken("ADMIN");
+        Venue venue = venueRepository.save(Venue.create("TYPE-HALL", "Type Hall", "Seoul"));
+        Event event = eventRepository.save(Event.create("Type Event", "Section type", EventStatus.PUBLISHED));
+        Show show = showRepository.save(Show.schedule(event, LocalDateTime.of(2026, 7, 2, 19, 0), venue.getId()));
+        Section assignedSection = sectionRepository.save(
+                Section.create("A", SectionSaleType.ASSIGNED_SEAT, venue.getId())
+        );
+        Section generalSection = sectionRepository.save(
+                Section.create("B", SectionSaleType.GENERAL_ADMISSION, venue.getId())
+        );
+        Seat assignedSeat = seatRepository.save(Seat.create("A-1", 1, 1, venue.getId(), assignedSection));
+        Seat quantitySeat = seatRepository.save(Seat.create("B-1", 1, 1, venue.getId(), generalSection));
+
+        mockMvc.perform(post("/api/admin/shows/{showId}/show-seats", show.getId())
+                        .header("Authorization", bearer(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(json(new CreateShowSeatsRequest(
+                                List.of(new CreateShowSeatsRequest.Item(assignedSeat.getId(), 150000))
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.createdCount").value(1));
+
+        mockMvc.perform(post("/api/admin/shows/{showId}/show-seats", show.getId())
+                        .header("Authorization", bearer(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(json(new CreateShowSeatsRequest(
+                                List.of(new CreateShowSeatsRequest.Item(quantitySeat.getId(), 150000))
+                        ))))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/admin/shows/{showId}/section-inventories", show.getId())
+                        .header("Authorization", bearer(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(json(new CreateShowSectionInventoriesRequest(
+                                List.of(new CreateShowSectionInventoriesRequest.Item(assignedSection.getId(), 120000, 100))
+                        ))))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/admin/shows/{showId}/section-inventories", show.getId())
+                        .header("Authorization", bearer(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(json(new CreateShowSectionInventoriesRequest(
+                                List.of(new CreateShowSectionInventoriesRequest.Item(generalSection.getId(), 120000, 100))
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.createdCount").value(1));
     }
 
     @Test

@@ -41,6 +41,11 @@ app:
     ttl-minutes: 5
   reservation:
     ttl-minutes: 15
+  expiration:
+    cleanup:
+      enabled: false
+      fixed-delay-ms: 30000
+      batch-size: 200
   sample-data:
     events:
       enabled: false

@@ -30,25 +30,26 @@
 | OAuth2 | OAUTH-004 | DELETE | `/api/oauth2/link/{provider}` | USER | 계정 연결 해제 | - | `204` | P1 | 예정 |
 | Events | EVT-001 | GET | `/api/events` | 없음 | 이벤트 목록 조회 | `status?` | `events[]` | P0 | 구현완료 |
 | Events | EVT-002 | GET | `/api/events/{eventId}` | 없음 | 이벤트 상세 및 회차 조회 | - | `event`, `shows[]` | P0 | 구현완료 |
-| Shows | SHW-001 | GET | `/api/shows/{showId}/availability` | 없음 | 좌석/구역 가용성 조회 | - | `seats[seatId,label,rowNo,colNo,price,available]`, `sections[sectionId,name,price,remainingQty]` | P0 | 구현완료 |
+| Shows | SHW-001 | GET | `/api/shows/{showId}/availability` | 없음 | 좌석/구역 가용성 조회 | - | `seats[seatId,label,rowNo,colNo,sectionId,sectionName,sectionSaleType,price,available]`, `sections[sectionId,name,saleType,price,remainingQty]` | P0 | 구현완료 |
 | Holds | HLD-001 | POST | `/api/holds` | USER | 홀드 생성 | `showId`, `items[seatId?,sectionId?,qty?]` | `holdId`, `expiresAt` | P0 | 구현완료 |
 | Holds | HLD-002 | GET | `/api/holds/{holdId}` | USER | 홀드 조회 | - | `hold[holdId,showId,status,expiresAt,createdAt]`, `items[type,seatId,sectionId,qty,unitPrice]` | P0 | 구현완료 |
 | Holds | HLD-003 | DELETE | `/api/holds/{holdId}` | USER | 홀드 취소 | - | `204` | P0 | 구현완료 |
 | Reservations | RES-001 | POST | `/api/reservations` | USER | 홀드를 결제 대기 예약으로 전환 | `holdId` | `reservationId`, `status` | P0 | 구현완료 |
 | Reservations | RES-002 | GET | `/api/reservations/{reservationId}` | USER | 예약 상세 조회 | - | `reservation[reservationId,showId,status,totalAmount,expiresAt,createdAt]`, `items[type,seatId,sectionId,qty,unitPrice]` | P1 | 구현완료 |
 | Reservations | RES-003 | GET | `/api/me/reservations` | USER | 내 예약 목록 조회 | `page`, `size`, `status?` | `page,size,totalElements,totalPages,reservations[]` | P1 | 구현완료 |
+| Reservations | RES-004 | DELETE | `/api/reservations/{reservationId}` | USER | 결제 대기 예약 취소 및 자원 해제 | - | `204` | P0 | 구현완료 |
 | Payments | PAY-001 | POST | `/api/payments/confirm` | USER | 결제 승인 및 멱등 처리 | Header `Idempotency-Key`, Body `reservationId`, `amount` | `paymentId`, `reservationId`, `status`, `reservationStatus`, `approvedAt` | P0 | 구현완료 |
 | Tickets | TKT-001 | GET | `/api/me/tickets` | USER | 내 티켓 목록 조회 | `page`, `size` | `page,size,totalElements,totalPages,tickets[ticketId,reservationId,showId,reservationItemId,type,seatId,sectionId,serial,qrToken,status,usedAt,createdAt]` | P1 | 구현완료 |
 | Checkin | CHK-001 | POST | `/api/checkin` | ADMIN | 체크인 처리 | `qrToken` | `ticketId,reservationId,showId,reservationItemId,type,seatId,sectionId,serial,qrToken,status,usedAt` | P1 | 구현완료 |
 | Admin | ADM-001 | POST | `/api/admin/venues/upsert` | ADMIN | 공연장 등록/수정 | `code`, `name`, `address` | `venueId` | P0 | 구현완료 |
-| Admin | ADM-002 | POST | `/api/admin/venues/{venueId}/seats` | ADMIN | 공연장 좌석 기준정보 등록 | `seats[]` | `createdCount` | P0 | 구현완료 |
-| Admin | ADM-008 | GET | `/api/admin/venues/{venueId}/seats` | ADMIN | 공연장 좌석 기준정보 조회 | - | `seats[seatId,label,rowNo,colNo]` | P1 | 구현완료 |
-| Admin | ADM-003 | POST | `/api/admin/venues/{venueId}/sections` | ADMIN | 공연장 구역 기준정보 등록 | `sections[]` | `createdCount` | P0 | 구현완료 |
-| Admin | ADM-009 | GET | `/api/admin/venues/{venueId}/sections` | ADMIN | 공연장 구역 기준정보 조회 | - | `sections[sectionId,name]` | P1 | 구현완료 |
+| Admin | ADM-002 | POST | `/api/admin/venues/{venueId}/seats` | ADMIN | 공연장 좌석 기준정보 등록 | `seats[label,rowNo,colNo,sectionId?]` | `createdCount` | P0 | 구현완료 |
+| Admin | ADM-008 | GET | `/api/admin/venues/{venueId}/seats` | ADMIN | 공연장 좌석 기준정보 조회 | - | `seats[seatId,label,rowNo,colNo,sectionId,sectionName,sectionSaleType]` | P1 | 구현완료 |
+| Admin | ADM-003 | POST | `/api/admin/venues/{venueId}/sections` | ADMIN | 공연장 구역 기준정보 등록 | `sections[name,saleType?]` | `createdCount` | P0 | 구현완료 |
+| Admin | ADM-009 | GET | `/api/admin/venues/{venueId}/sections` | ADMIN | 공연장 구역 기준정보 조회 | - | `sections[sectionId,name,saleType]` | P1 | 구현완료 |
 | Admin | ADM-004 | POST | `/api/admin/events` | ADMIN | 이벤트 생성 | `title`, `desc`, `status` | `eventId` | P0 | 구현완료 |
 | Admin | ADM-005 | POST | `/api/admin/shows` | ADMIN | 회차 생성 | `eventId`, `venueId`, `startAt` | `showId` | P0 | 구현완료 |
-| Admin | ADM-006 | POST | `/api/admin/shows/{showId}/show-seats` | ADMIN | 회차 좌석 판매 정보 생성 | `items[seatId,price]` | `createdCount` | P0 | 구현완료 |
-| Admin | ADM-007 | POST | `/api/admin/shows/{showId}/section-inventories` | ADMIN | 회차 구역 재고 생성 | `items[sectionId,price,capacity]` | `createdCount` | P0 | 구현완료 |
+| Admin | ADM-006 | POST | `/api/admin/shows/{showId}/show-seats` | ADMIN | 좌석 지정형 회차 좌석 판매 정보 생성 | `items[seatId,price]` | `createdCount` | P0 | 구현완료 |
+| Admin | ADM-007 | POST | `/api/admin/shows/{showId}/section-inventories` | ADMIN | 수량형 회차 구역 재고 생성 | `items[sectionId,price,capacity]` | `createdCount` | P0 | 구현완료 |
 | Admin | ADM-010 | GET | `/api/admin/venues` | ADMIN | 내 공연장 목록 조회 | - | `venues[venueId,code,name,address,createdByUserId,createdAt,updatedAt]` | P1 | 구현완료 |
 | Admin | ADM-011 | GET | `/api/admin/events` | ADMIN | 내 이벤트 목록 조회 | - | `events[eventId,title,description,status,createdByUserId,createdAt]` | P1 | 구현완료 |
 | Admin | ADM-012 | GET | `/api/admin/shows` | ADMIN | 내 회차 목록 조회 | - | `shows[showId,eventId,eventTitle,venueId,startAt,status,createdByUserId,createdAt]` | P1 | 구현완료 |

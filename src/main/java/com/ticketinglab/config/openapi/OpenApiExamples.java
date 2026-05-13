@@ -96,6 +96,9 @@ public final class OpenApiExamples {
                   "label": "A1",
                   "rowNo": 1,
                   "colNo": 1,
+                  "sectionId": 101,
+                  "sectionName": "A",
+                  "sectionSaleType": "ASSIGNED_SEAT",
                   "price": 150000,
                   "available": true
                 },
@@ -104,6 +107,9 @@ public final class OpenApiExamples {
                   "label": "A2",
                   "rowNo": 1,
                   "colNo": 2,
+                  "sectionId": 101,
+                  "sectionName": "A",
+                  "sectionSaleType": "ASSIGNED_SEAT",
                   "price": 150000,
                   "available": false
                 }
@@ -112,6 +118,7 @@ public final class OpenApiExamples {
                 {
                   "sectionId": 301,
                   "name": "R",
+                  "saleType": "GENERAL_ADMISSION",
                   "price": 120000,
                   "remainingQty": 75
                 }
@@ -314,12 +321,14 @@ public final class OpenApiExamples {
                 {
                   "label": "A1",
                   "rowNo": 1,
-                  "colNo": 1
+                  "colNo": 1,
+                  "sectionId": 101
                 },
                 {
                   "label": "A2",
                   "rowNo": 1,
-                  "colNo": 2
+                  "colNo": 2,
+                  "sectionId": 101
                 }
               ]
             }
@@ -332,13 +341,19 @@ public final class OpenApiExamples {
                   "seatId": 11,
                   "label": "A1",
                   "rowNo": 1,
-                  "colNo": 1
+                  "colNo": 1,
+                  "sectionId": 101,
+                  "sectionName": "A",
+                  "sectionSaleType": "ASSIGNED_SEAT"
                 },
                 {
                   "seatId": 12,
                   "label": "A2",
                   "rowNo": 1,
-                  "colNo": 2
+                  "colNo": 2,
+                  "sectionId": 101,
+                  "sectionName": "A",
+                  "sectionSaleType": "ASSIGNED_SEAT"
                 }
               ]
             }
@@ -348,10 +363,12 @@ public final class OpenApiExamples {
             {
               "sections": [
                 {
-                  "name": "R"
+                  "name": "R",
+                  "saleType": "GENERAL_ADMISSION"
                 },
                 {
-                  "name": "S"
+                  "name": "A",
+                  "saleType": "ASSIGNED_SEAT"
                 }
               ]
             }
@@ -362,11 +379,13 @@ public final class OpenApiExamples {
               "sections": [
                 {
                   "sectionId": 21,
-                  "name": "R"
+                  "name": "R",
+                  "saleType": "GENERAL_ADMISSION"
                 },
                 {
                   "sectionId": 22,
-                  "name": "S"
+                  "name": "A",
+                  "saleType": "ASSIGNED_SEAT"
                 }
               ]
             }

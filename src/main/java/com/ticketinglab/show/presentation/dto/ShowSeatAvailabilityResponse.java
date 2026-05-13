@@ -7,6 +7,9 @@ public record ShowSeatAvailabilityResponse(
         String label,
         Integer rowNo,
         Integer colNo,
+        Long sectionId,
+        String sectionName,
+        String sectionSaleType,
         int price,
         boolean available
 ) {
@@ -16,6 +19,9 @@ public record ShowSeatAvailabilityResponse(
                 showSeat.getSeat().getLabel(),
                 showSeat.getSeat().getRowNo(),
                 showSeat.getSeat().getColNo(),
+                showSeat.getSeat().getSection() == null ? null : showSeat.getSeat().getSection().getId(),
+                showSeat.getSeat().getSection() == null ? null : showSeat.getSeat().getSection().getName(),
+                showSeat.getSeat().getSection() == null ? null : showSeat.getSeat().getSection().getSaleType().name(),
                 showSeat.getPrice(),
                 showSeat.isAvailable()
         );

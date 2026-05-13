@@ -53,6 +53,19 @@ public interface ReservationApiDocs {
             @Valid CreateReservationRequest request
     );
 
+    @Operation(summary = "예약 취소", description = "RES-004. 결제 대기 상태의 본인 예약을 취소하고 선점된 좌석/구역 재고를 해제합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "예약 취소 성공"),
+            @ApiResponse(responseCode = "401", description = "Bearer 토큰이 필요합니다."),
+            @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없습니다."),
+            @ApiResponse(responseCode = "409", description = "이미 결제되었거나 취소할 수 없는 예약 상태입니다.")
+    })
+    ResponseEntity<Void> cancel(
+            @Parameter(hidden = true) Authentication authentication,
+            @Parameter(description = "예약 ID", example = "c8a01d2c-592a-43d6-9afb-a0df27c0c1c4")
+            String reservationId
+    );
+
     @Operation(summary = "예약 상세 조회", description = "RES-002. 본인 예약의 금액, 만료 시각, 예약 아이템 목록을 조회합니다.")
     @ApiResponses({
             @ApiResponse(

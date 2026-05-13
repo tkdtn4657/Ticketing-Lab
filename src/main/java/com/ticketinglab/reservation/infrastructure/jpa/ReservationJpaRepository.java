@@ -38,6 +38,34 @@ public interface ReservationJpaRepository extends JpaRepository<Reservation, Str
     Page<Reservation> findAllByUserIdAndStatus(Long userId, ReservationStatus status, Pageable pageable);
 
     @Query("""
+            select reservation.id
+            from Reservation reservation
+            where reservation.status = :status
+              and reservation.expiresAt <= :now
+            order by reservation.expiresAt asc
+            """)
+    List<String> findExpiredIds(
+            @Param("status") ReservationStatus status,
+            @Param("now") LocalDateTime now,
+            Pageable pageable
+    );
+
+    @Query("""
+            select reservation.id
+            from Reservation reservation
+            where reservation.showId = :showId
+              and reservation.status = :status
+              and reservation.expiresAt <= :now
+            order by reservation.expiresAt asc
+            """)
+    List<String> findExpiredIdsByShowId(
+            @Param("showId") Long showId,
+            @Param("status") ReservationStatus status,
+            @Param("now") LocalDateTime now,
+            Pageable pageable
+    );
+
+    @Query("""
             select distinct reservation
             from Reservation reservation
             left join fetch reservation.items
@@ -95,6 +123,14 @@ public interface ReservationJpaRepository extends JpaRepository<Reservation, Str
 
     default List<Reservation> findAllPendingExpiredByUserId(Long userId, LocalDateTime now) {
         return findAllByUserIdAndStatusAndExpiresAtLessThanEqual(userId, ReservationStatus.PENDING_PAYMENT, now);
+    }
+
+    default List<String> findPendingExpiredIds(LocalDateTime now, int limit) {
+        return findExpiredIds(ReservationStatus.PENDING_PAYMENT, now, Pageable.ofSize(limit));
+    }
+
+    default List<String> findPendingExpiredIdsByShowId(Long showId, LocalDateTime now, int limit) {
+        return findExpiredIdsByShowId(showId, ReservationStatus.PENDING_PAYMENT, now, Pageable.ofSize(limit));
     }
 
     default List<Reservation> findAllPendingExpiredByShowIdAndSeatIdIn(

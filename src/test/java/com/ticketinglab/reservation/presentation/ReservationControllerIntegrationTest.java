@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -148,6 +149,39 @@ class ReservationControllerIntegrationTest {
         assertThat(reservation.getTotalAmount()).isEqualTo(150000 + (3 * 120000));
         assertThat(showSeat.getStatus()).isEqualTo(ShowSeatStatus.RESERVED);
         assertThat(inventory.getHoldQty()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("RES-004 DELETE /api/reservations/{reservationId} cancels pending reservation and releases resources")
+    void res004_cancelReservation_releasesResources() throws Exception {
+        UserSession session = createUserSession();
+        ReservationFixture fixture = createFixture();
+        String holdId = createHold(
+                session.accessToken(),
+                fixture.show().getId(),
+                fixture.firstSeat().getId(),
+                fixture.firstSection().getId(),
+                2
+        );
+        String reservationId = createReservation(session.accessToken(), holdId);
+
+        mockMvc.perform(delete("/api/reservations/{reservationId}", reservationId)
+                        .header("Authorization", bearer(session.accessToken())))
+                .andExpect(status().isNoContent());
+
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow();
+        ShowSeat releasedSeat = showSeatRepository.findAllByShowIdAndSeatIdIn(
+                fixture.show().getId(),
+                List.of(fixture.firstSeat().getId())
+        ).get(0);
+        ShowSectionInventory releasedInventory = showSectionInventoryRepository.findAllByShowIdAndSectionIdIn(
+                fixture.show().getId(),
+                List.of(fixture.firstSection().getId())
+        ).get(0);
+
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELED);
+        assertThat(releasedSeat.getStatus()).isEqualTo(ShowSeatStatus.AVAILABLE);
+        assertThat(releasedInventory.getHoldQty()).isZero();
     }
 
     @Test

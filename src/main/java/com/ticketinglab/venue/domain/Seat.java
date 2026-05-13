@@ -2,9 +2,12 @@ package com.ticketinglab.venue.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -45,14 +48,27 @@ public class Seat {
     @Column(name = "venue_id", nullable = false)
     private Long venueId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "section_id")
+    private Section section;
+
     public static Seat create(String label, Integer rowNo, Integer colNo, Long venueId) {
+        return create(label, rowNo, colNo, venueId, null);
+    }
+
+    public static Seat create(String label, Integer rowNo, Integer colNo, Long venueId, Section section) {
         return Seat.builder()
                 .label(label)
                 .rowNo(rowNo)
                 .colNo(colNo)
                 .createdAt(LocalDateTime.now())
                 .venueId(venueId)
+                .section(section)
                 .build();
+    }
+
+    public boolean allowsAssignedSeatHold() {
+        return section == null || section.isAssignedSeatType();
     }
 
     @Builder
@@ -62,7 +78,8 @@ public class Seat {
             Integer rowNo,
             Integer colNo,
             LocalDateTime createdAt,
-            Long venueId
+            Long venueId,
+            Section section
     ) {
         this.id = id;
         this.label = label;
@@ -70,5 +87,6 @@ public class Seat {
         this.colNo = colNo;
         this.createdAt = createdAt;
         this.venueId = venueId;
+        this.section = section;
     }
 }

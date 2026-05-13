@@ -52,7 +52,11 @@ services:
       APP_SAMPLE_ADMIN_ENABLED: ${APP_SAMPLE_ADMIN_ENABLED:-true}
       APP_SAMPLE_ADMIN_EMAIL: ${APP_SAMPLE_ADMIN_EMAIL:-admin@example.com}
       APP_SAMPLE_ADMIN_PASSWORD: ${APP_SAMPLE_ADMIN_PASSWORD:-admin1234}
-      JAVA_OPTS: ${JAVA_OPTS:-}
+      TZ: Asia/Seoul
+      LOG_PATH: /app/logs
+      JAVA_OPTS: ${JAVA_OPTS:--Duser.timezone=Asia/Seoul}
+    volumes:
+      - ./logs:/app/logs
     ports:
       - "127.0.0.1:${BACKEND_PORT:-9090}:9090"
     healthcheck:

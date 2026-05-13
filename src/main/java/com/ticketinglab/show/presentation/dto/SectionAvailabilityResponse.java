@@ -5,6 +5,7 @@ import com.ticketinglab.show.domain.ShowSectionInventory;
 public record SectionAvailabilityResponse(
         Long sectionId,
         String name,
+        String saleType,
         int price,
         int remainingQty
 ) {
@@ -12,6 +13,7 @@ public record SectionAvailabilityResponse(
         return new SectionAvailabilityResponse(
                 inventory.getSection().getId(),
                 inventory.getSection().getName(),
+                inventory.getSection().getSaleType().name(),
                 inventory.getPrice(),
                 inventory.remainingQuantity()
         );

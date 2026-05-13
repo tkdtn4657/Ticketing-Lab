@@ -45,6 +45,9 @@ public class CreateShowSeatsUseCase {
         if (seats.size() != seatIds.size()) {
             throw new ResponseStatusException(BAD_REQUEST, "invalid seat ids");
         }
+        if (seats.stream().anyMatch(seat -> !seat.allowsAssignedSeatHold())) {
+            throw new ResponseStatusException(BAD_REQUEST, "seat belongs to a quantity section");
+        }
 
         if (!showSeatRepository.findAllByShowIdAndSeatIdIn(showId, seatIds).isEmpty()) {
             throw new ResponseStatusException(CONFLICT, "show seat already exists");

@@ -19,6 +19,13 @@
 - 초기화기는 `app.sample-data.events.enabled=true`일 때만 동작한다.
 - 이미 이벤트가 하나라도 있으면 샘플 데이터를 다시 넣지 않는다.
 
+## 시간대와 파일 로그
+- 애플리케이션 기본 시간대는 `Asia/Seoul`이다.
+- Docker 이미지는 `TZ=Asia/Seoul`, `JAVA_OPTS=-Duser.timezone=Asia/Seoul`로 실행한다.
+- 파일 로그는 `LOG_PATH` 아래에 날짜별 `yyyyMMdd_back.log` 형식으로 저장한다.
+- Docker Compose 실행 시 기본 로그 경로는 백엔드 레포 기준 `./logs`이며, 통합 워크스페이스 Compose에서는 `./backend/logs`가 컨테이너의 `/app/logs`에 마운트된다.
+- 컨테이너는 시작 시 `/app/logs`를 생성하고 `app` 사용자 소유로 정리한 뒤 애플리케이션을 실행한다.
+
 ## 로컬 관리자 계정
 - `AdminAccountInitializer`는 `local` 프로필에서만 실행된다.
 - 초기화기는 `app.sample-data.admin.enabled=true`일 때만 동작한다.

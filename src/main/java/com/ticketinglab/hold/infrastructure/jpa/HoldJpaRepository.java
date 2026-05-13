@@ -3,6 +3,7 @@ package com.ticketinglab.hold.infrastructure.jpa;
 import com.ticketinglab.hold.domain.Hold;
 import com.ticketinglab.hold.domain.HoldStatus;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -30,6 +31,34 @@ public interface HoldJpaRepository extends JpaRepository<Hold, String> {
             where hold.id = :holdId
             """)
     Optional<Hold> findLockedById(@Param("holdId") String holdId);
+
+    @Query("""
+            select hold.id
+            from Hold hold
+            where hold.status = :status
+              and hold.expiresAt <= :now
+            order by hold.expiresAt asc
+            """)
+    List<String> findExpiredIds(
+            @Param("now") LocalDateTime now,
+            @Param("status") HoldStatus status,
+            Pageable pageable
+    );
+
+    @Query("""
+            select hold.id
+            from Hold hold
+            where hold.showId = :showId
+              and hold.status = :status
+              and hold.expiresAt <= :now
+            order by hold.expiresAt asc
+            """)
+    List<String> findExpiredIdsByShowId(
+            @Param("showId") Long showId,
+            @Param("now") LocalDateTime now,
+            @Param("status") HoldStatus status,
+            Pageable pageable
+    );
 
     @Query("""
             select distinct hold
@@ -87,5 +116,13 @@ public interface HoldJpaRepository extends JpaRepository<Hold, String> {
             Collection<Long> sectionIds
     ) {
         return findAllActiveExpiredByShowIdAndSectionIdIn(showId, now, sectionIds, HoldStatus.ACTIVE);
+    }
+
+    default List<String> findActiveExpiredIds(LocalDateTime now, int limit) {
+        return findExpiredIds(now, HoldStatus.ACTIVE, Pageable.ofSize(limit));
+    }
+
+    default List<String> findActiveExpiredIdsByShowId(Long showId, LocalDateTime now, int limit) {
+        return findExpiredIdsByShowId(showId, now, HoldStatus.ACTIVE, Pageable.ofSize(limit));
     }
 }

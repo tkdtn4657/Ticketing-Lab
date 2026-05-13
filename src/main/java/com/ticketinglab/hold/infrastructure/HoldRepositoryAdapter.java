@@ -33,6 +33,16 @@ public class HoldRepositoryAdapter implements HoldRepository {
     }
 
     @Override
+    public List<String> findActiveExpiredIds(LocalDateTime now, int limit) {
+        return jpaRepository.findActiveExpiredIds(now, limit);
+    }
+
+    @Override
+    public List<String> findActiveExpiredIdsByShowId(Long showId, LocalDateTime now, int limit) {
+        return jpaRepository.findActiveExpiredIdsByShowId(showId, now, limit);
+    }
+
+    @Override
     public List<Hold> findAllActiveExpiredByShowIdAndSeatIdIn(
             Long showId,
             Collection<Long> seatIds,

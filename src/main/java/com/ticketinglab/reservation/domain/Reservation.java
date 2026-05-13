@@ -119,6 +119,20 @@ public class Reservation {
         this.status = ReservationStatus.EXPIRED;
     }
 
+    public void cancel() {
+        if (status == ReservationStatus.CANCELED) {
+            return;
+        }
+        if (status == ReservationStatus.PAID) {
+            throw new IllegalStateException("paid reservation cannot be canceled");
+        }
+        if (status == ReservationStatus.EXPIRED) {
+            throw new IllegalStateException("expired reservation cannot be canceled");
+        }
+        this.status = ReservationStatus.CANCELED;
+        this.expiresAt = null;
+    }
+
     public void confirmPayment() {
         if (status == ReservationStatus.PAID) {
             throw new IllegalStateException("reservation already paid");

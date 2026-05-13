@@ -14,8 +14,8 @@
 
 ### 기준 정보
 - `venues(created_by_user_id)`
-- `seats(venue_id)`
-- `sections(venue_id)`
+- `sections(venue_id, sale_type[ASSIGNED_SEAT/GENERAL_ADMISSION])`
+- `seats(venue_id, section_id?)`
 - `events(created_by_user_id)`
 - `shows(event_id, venue_id, start_at, status, created_by_user_id)`
 
@@ -23,7 +23,7 @@
 
 ### 인벤토리
 - `show_seats(show_id, seat_id, price, status, version)`
-- `show_section_inventories(show_id, section_id, price, capacity, sold_qty, hold_qty, version)`
+- `show_section_inventories(show_id, section_id, price, capacity, sold_qty, hold_qty, version)` - `GENERAL_ADMISSION` 구역만 사용
 
 ### 홀드 / 예약
 - `holds(id uuid, user_id, show_id, status, expires_at)`
@@ -65,9 +65,12 @@
 10. 마스터 관리자 화면에서는 `GET /api/master/venues`, `GET /api/master/events`, `GET /api/master/shows`로 전체 데이터를 조회한다.
 
 ### 좌석 데이터 관점 정리
-- `seats`, `sections`는 공연장 기준정보다.
+- `sections`는 공연장 구역 기준정보이며, `ASSIGNED_SEAT` 또는 `GENERAL_ADMISSION` 타입을 가진다.
+- `seats`는 공연장 좌석 기준정보이며, 필요하면 `ASSIGNED_SEAT` 구역에 연결한다.
 - `show_seats`, `show_section_inventories`는 회차별 판매 인벤토리다.
 - 즉 좌석 마스터를 먼저 만들고, 실제 판매용 인벤토리는 회차 생성 뒤 별도로 붙인다.
+- `ASSIGNED_SEAT` 구역은 `show_seats`와 `seatId` 홀드로 판매한다.
+- `GENERAL_ADMISSION` 구역은 `show_section_inventories`와 `sectionId + qty` 홀드로 판매한다.
 - `SHW-001`는 좌석을 생성하지 않고, 이미 준비된 회차 인벤토리를 조회만 한다.
 
 ## MVP 범위
@@ -78,8 +81,8 @@
 - `GET /api/shows/{showId}/availability`
 
 ### SHW-001 응답 요약
-- `seats[]`: `seatId`, `label`, `rowNo`, `colNo`, `price`, `available`
-- `sections[]`: `sectionId`, `name`, `price`, `remainingQty`
+- `seats[]`: `seatId`, `label`, `rowNo`, `colNo`, `sectionId`, `sectionName`, `sectionSaleType`, `price`, `available`
+- `sections[]`: `sectionId`, `name`, `saleType`, `price`, `remainingQty`
 
 ### Hold
 - `POST /api/holds`
@@ -87,14 +90,17 @@
 - `DELETE /api/holds/{holdId}`
 - 요청 아이템은 `seatId` 또는 `sectionId` 중 하나를 가진다.
 - 좌석 홀드는 `qty=1` 고정이며, 구역 홀드는 `qty`를 반드시 전달한다.
-- Hold TTL은 5분이며, 생성/조회/취소 시점에 만료된 hold를 자동 해제한다.
+- `ASSIGNED_SEAT` 구역의 좌석은 `seatId`로 홀드하고, `GENERAL_ADMISSION` 구역은 `sectionId + qty`로 홀드한다.
+- Hold TTL은 5분이며, 생성/조회/취소/가용성 조회 시점과 백그라운드 스케줄러에서 만료된 hold를 자동 해제한다.
 
 ### Reservation
 - `POST /api/reservations`
 - `GET /api/reservations/{reservationId}`
+- `DELETE /api/reservations/{reservationId}`
 - `GET /api/me/reservations`
 - 예약 생성 시 hold는 `CONVERTED`로 바뀌고, 좌석은 `RESERVED`, 구역 수량은 기존 `hold_qty`를 유지한다.
-- Reservation TTL은 15분이며, 생성/상세/목록/새 hold 생성 시점에 만료된 reservation을 lazy release 한다.
+- 예약 취소 시 `PENDING_PAYMENT -> CANCELED`로 바뀌고 좌석/구역 선점 자원을 해제한다.
+- Reservation TTL은 15분이며, 생성/상세/목록/새 hold/가용성 조회 시점과 백그라운드 스케줄러에서 만료된 reservation을 자동 해제한다.
 
 ### Payment
 - `POST /api/payments/confirm` with Header `Idempotency-Key`
@@ -118,6 +124,7 @@
 - `GET /api/admin/venues/{venueId}/seats`
 - `POST /api/admin/venues/{venueId}/sections`
 - `GET /api/admin/venues/{venueId}/sections`
+- 구역은 `saleType=ASSIGNED_SEAT` 또는 `GENERAL_ADMISSION`을 가진다. 지정 좌석형 구역은 `show_seats`, 수량형 구역은 `show_section_inventories`에만 연결된다.
 - `POST /api/admin/events`
 - `POST /api/admin/shows`
 - `POST /api/admin/shows/{showId}/show-seats`

@@ -68,6 +68,9 @@ public class ShowSectionInventory {
     }
 
     public static ShowSectionInventory open(Show show, Section section, int price, int capacity) {
+        if (!section.isGeneralAdmissionType()) {
+            throw new IllegalArgumentException("assigned-seat section cannot have quantity inventory");
+        }
         return create(show, section, price, capacity, 0, 0);
     }
 
@@ -76,6 +79,9 @@ public class ShowSectionInventory {
     }
 
     public void hold(int quantity) {
+        if (!section.isGeneralAdmissionType()) {
+            throw new IllegalStateException("section does not support quantity hold");
+        }
         if (quantity <= 0) {
             throw new IllegalArgumentException("quantity must be positive");
         }

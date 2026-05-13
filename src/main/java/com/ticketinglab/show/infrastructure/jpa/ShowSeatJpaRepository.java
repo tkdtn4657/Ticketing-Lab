@@ -14,11 +14,13 @@ import java.util.List;
 
 public interface ShowSeatJpaRepository extends JpaRepository<ShowSeat, ShowSeatId> {
 
-    @EntityGraph(attributePaths = "seat")
+    @EntityGraph(attributePaths = {"seat", "seat.section"})
     List<ShowSeat> findAllByShow_Id(Long showId);
 
+    @EntityGraph(attributePaths = {"seat", "seat.section"})
     List<ShowSeat> findAllByShow_IdAndSeat_IdIn(Long showId, Collection<Long> seatIds);
 
+    @EntityGraph(attributePaths = {"seat", "seat.section"})
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             select showSeat

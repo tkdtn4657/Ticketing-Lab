@@ -26,6 +26,7 @@ bin/
 out/
 .env
 src/main/resources/application-local-secret.yml
+logs/
 !**/src/main/**/out/
 !**/src/test/**/out/
 

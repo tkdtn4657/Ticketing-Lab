@@ -27,6 +27,14 @@ public class ReservationResourceManager {
     private final ShowSeatRepository showSeatRepository;
     private final ShowSectionInventoryRepository showSectionInventoryRepository;
 
+    public int expirePendingReservations(LocalDateTime now, int limit) {
+        return expirePendingReservationIds(reservationRepository.findPendingExpiredIds(now, limit), now);
+    }
+
+    public int expirePendingReservationsByShowId(Long showId, LocalDateTime now, int limit) {
+        return expirePendingReservationIds(reservationRepository.findPendingExpiredIdsByShowId(showId, now, limit), now);
+    }
+
     public void expirePendingReservations(
             Long showId,
             Collection<Long> seatIds,
@@ -67,6 +75,37 @@ public class ReservationResourceManager {
         reservation.expire(now);
         releaseResources(reservation, lockedResources);
         reservationRepository.save(reservation);
+    }
+
+    public void cancel(Reservation reservation) {
+        if (!reservation.isPendingPayment()) {
+            reservation.cancel();
+            reservationRepository.save(reservation);
+            return;
+        }
+
+        LockedResources lockedResources = lockResources(
+                reservation.getShowId(),
+                seatIdsOf(reservation),
+                sectionIdsOf(reservation)
+        );
+
+        reservation.cancel();
+        releaseResources(reservation, lockedResources);
+        reservationRepository.save(reservation);
+    }
+
+    private int expirePendingReservationIds(Collection<String> reservationIds, LocalDateTime now) {
+        int expiredCount = 0;
+        for (String reservationId : reservationIds) {
+            Reservation reservation = reservationRepository.findByIdForUpdate(reservationId).orElse(null);
+            if (reservation == null || !reservation.isPendingPayment() || !reservation.isExpiredAt(now)) {
+                continue;
+            }
+            expire(reservation, now);
+            expiredCount++;
+        }
+        return expiredCount;
     }
 
     public LockedResources lockResources(

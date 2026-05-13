@@ -28,6 +28,14 @@ public class HoldResourceManager {
     private final ShowSeatRepository showSeatRepository;
     private final ShowSectionInventoryRepository showSectionInventoryRepository;
 
+    public int expireActiveHolds(LocalDateTime now, int limit) {
+        return expireActiveHoldIds(holdRepository.findActiveExpiredIds(now, limit), now);
+    }
+
+    public int expireActiveHoldsByShowId(Long showId, LocalDateTime now, int limit) {
+        return expireActiveHoldIds(holdRepository.findActiveExpiredIdsByShowId(showId, now, limit), now);
+    }
+
     public LockedResources prepareForCreate(
             Long showId,
             Collection<Long> seatIds,
@@ -95,6 +103,19 @@ public class HoldResourceManager {
         hold.expire(now);
         releaseResources(hold, lockedResources);
         holdRepository.save(hold);
+    }
+
+    private int expireActiveHoldIds(Collection<String> holdIds, LocalDateTime now) {
+        int expiredCount = 0;
+        for (String holdId : holdIds) {
+            Hold hold = holdRepository.findByIdForUpdate(holdId).orElse(null);
+            if (hold == null || !hold.isActive() || !hold.isExpiredAt(now)) {
+                continue;
+            }
+            expire(hold, now);
+            expiredCount++;
+        }
+        return expiredCount;
     }
 
     private Map<String, Hold> findExpiredHolds(

@@ -12,14 +12,17 @@ FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-RUN addgroup -S app && adduser -S app -G app
+RUN apk add --no-cache tzdata su-exec \
+    && addgroup -S app \
+    && adduser -S app -G app \
+    && mkdir -p /app/logs \
+    && chown -R app:app /app/logs
 
 COPY --from=build /workspace/build/libs/*.jar /app/app.jar
 
-USER app
-
 EXPOSE 9090
 
-ENV JAVA_OPTS=""
+ENV TZ=Asia/Seoul
+ENV JAVA_OPTS="-Duser.timezone=Asia/Seoul"
 
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["sh", "-c", "mkdir -p /app/logs && chown -R app:app /app/logs && exec su-exec app:app java $JAVA_OPTS -jar /app/app.jar"]

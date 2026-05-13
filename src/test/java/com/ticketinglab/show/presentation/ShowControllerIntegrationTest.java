@@ -5,6 +5,10 @@ import com.ticketinglab.event.domain.EventRepository;
 import com.ticketinglab.event.domain.EventStatus;
 import com.ticketinglab.event.domain.Show;
 import com.ticketinglab.event.domain.ShowRepository;
+import com.ticketinglab.hold.domain.Hold;
+import com.ticketinglab.hold.domain.HoldRepository;
+import com.ticketinglab.reservation.domain.Reservation;
+import com.ticketinglab.reservation.domain.ReservationRepository;
 import com.ticketinglab.show.domain.ShowSectionInventory;
 import com.ticketinglab.show.domain.ShowSectionInventoryRepository;
 import com.ticketinglab.show.domain.ShowSeat;
@@ -55,6 +59,12 @@ class ShowControllerIntegrationTest {
     @Autowired
     private ShowSectionInventoryRepository showSectionInventoryRepository;
 
+    @Autowired
+    private HoldRepository holdRepository;
+
+    @Autowired
+    private ReservationRepository reservationRepository;
+
     @Test
     @DisplayName("SHW-001 GET /api/shows/{showId}/availability returns seats and sections")
     void shw001_availability_returnsSeatsAndSections() throws Exception {
@@ -92,6 +102,44 @@ class ShowControllerIntegrationTest {
                 .andExpect(jsonPath("$.sections[0].name").value("R"))
                 .andExpect(jsonPath("$.sections[0].price").value(120000))
                 .andExpect(jsonPath("$.sections[0].remainingQty").value(75));
+    }
+
+    @Test
+    @DisplayName("SHW-001 availability releases expired holds and reservations before responding")
+    void shw001_availability_releasesExpiredResourcesBeforeResponse() throws Exception {
+        Event event = eventRepository.save(
+                Event.create("Cleanup Concert", "Expired resource cleanup", EventStatus.PUBLISHED)
+        );
+        Show show = showRepository.save(
+                Show.schedule(event, LocalDateTime.of(2026, 4, 6, 19, 0), 302L)
+        );
+
+        Seat heldSeat = seatRepository.save(Seat.create("A1", 1, 1, 302L));
+        Seat reservedSeat = seatRepository.save(Seat.create("A2", 1, 2, 302L));
+        showSeatRepository.save(ShowSeat.create(show, heldSeat, 150000, ShowSeatStatus.HELD));
+        showSeatRepository.save(ShowSeat.create(show, reservedSeat, 150000, ShowSeatStatus.RESERVED));
+
+        Hold expiredHold = Hold.create(101L, show.getId(), LocalDateTime.now().minusMinutes(1));
+        expiredHold.addSeatItem(heldSeat.getId(), 150000);
+        holdRepository.save(expiredHold);
+
+        Hold convertedHold = Hold.create(101L, show.getId(), LocalDateTime.now().plusMinutes(5));
+        convertedHold.addSeatItem(reservedSeat.getId(), 150000);
+        convertedHold.convert();
+        Reservation expiredReservation = Reservation.createFromHold(
+                convertedHold,
+                LocalDateTime.now().minusMinutes(1)
+        );
+        reservationRepository.save(expiredReservation);
+
+        mockMvc.perform(get("/api/shows/{showId}/availability", show.getId())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.seats.length()").value(2))
+                .andExpect(jsonPath("$.seats[0].seatId").value(heldSeat.getId()))
+                .andExpect(jsonPath("$.seats[0].available").value(true))
+                .andExpect(jsonPath("$.seats[1].seatId").value(reservedSeat.getId()))
+                .andExpect(jsonPath("$.seats[1].available").value(true));
     }
 
     @Test

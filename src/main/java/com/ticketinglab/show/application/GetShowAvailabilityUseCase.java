@@ -1,6 +1,7 @@
 package com.ticketinglab.show.application;
 
 import com.ticketinglab.event.domain.ShowRepository;
+import com.ticketinglab.expiration.application.ExpiredResourceCleanupService;
 import com.ticketinglab.show.domain.ShowSectionInventory;
 import com.ticketinglab.show.domain.ShowSectionInventoryRepository;
 import com.ticketinglab.show.domain.ShowSeat;
@@ -25,11 +26,14 @@ public class GetShowAvailabilityUseCase {
     private final ShowRepository showRepository;
     private final ShowSeatRepository showSeatRepository;
     private final ShowSectionInventoryRepository showSectionInventoryRepository;
+    private final ExpiredResourceCleanupService cleanupService;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ShowAvailabilityResponse execute(Long showId) {
         showRepository.findById(showId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "show not found"));
+
+        cleanupService.cleanupShow(showId);
 
         List<ShowSeatAvailabilityResponse> seats = showSeatRepository.findAllByShowId(showId).stream()
                 .sorted(seatAvailabilityOrder())

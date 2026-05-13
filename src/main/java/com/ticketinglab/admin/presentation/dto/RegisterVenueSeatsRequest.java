@@ -13,7 +13,8 @@ public record RegisterVenueSeatsRequest(
     public record SeatItem(
             @NotBlank String label,
             @Positive Integer rowNo,
-            @Positive Integer colNo
+            @Positive Integer colNo,
+            @Positive Long sectionId
     ) {
     }
 }
