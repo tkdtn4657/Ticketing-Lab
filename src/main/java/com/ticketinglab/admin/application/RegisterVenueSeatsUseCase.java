@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -46,6 +45,7 @@ public class RegisterVenueSeatsUseCase {
             throw new ResponseStatusException(CONFLICT, "seat already exists");
         }
 
+        validateSectionIdsPresent(request);
         Map<Long, Section> sectionById = loadSectionById(venueId, request);
         List<Seat> seats = request.seats().stream()
                 .map(item -> Seat.create(
@@ -53,7 +53,7 @@ public class RegisterVenueSeatsUseCase {
                         item.rowNo(),
                         item.colNo(),
                         venueId,
-                        item.sectionId() == null ? null : sectionById.get(item.sectionId())
+                        sectionById.get(item.sectionId())
                 ))
                 .toList();
 
@@ -67,17 +67,20 @@ public class RegisterVenueSeatsUseCase {
         }
     }
 
+    private void validateSectionIdsPresent(RegisterVenueSeatsRequest request) {
+        boolean hasSeatWithoutSection = request.seats().stream()
+                .anyMatch(item -> item.sectionId() == null);
+        if (hasSeatWithoutSection) {
+            throw new ResponseStatusException(BAD_REQUEST, "section id required for seats");
+        }
+    }
+
     private Map<Long, Section> loadSectionById(Long venueId, RegisterVenueSeatsRequest request) {
         List<Long> sectionIds = request.seats().stream()
                 .map(RegisterVenueSeatsRequest.SeatItem::sectionId)
-                .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new))
                 .stream()
                 .toList();
-
-        if (sectionIds.isEmpty()) {
-            return Map.of();
-        }
 
         List<Section> sections = sectionRepository.findAllByVenueIdAndIdIn(venueId, sectionIds);
         if (sections.size() != sectionIds.size()) {

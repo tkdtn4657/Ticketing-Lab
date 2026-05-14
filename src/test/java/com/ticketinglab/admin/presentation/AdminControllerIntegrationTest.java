@@ -158,31 +158,44 @@ class AdminControllerIntegrationTest {
         String adminToken = createAccessToken("ADMIN");
         Venue venue = venueRepository.save(Venue.create("BUSAN-HALL", "Busan Hall", "Centum"));
 
-        mockMvc.perform(post("/api/admin/venues/{venueId}/seats", venue.getId())
-                        .header("Authorization", bearer(adminToken))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .content(json(new RegisterVenueSeatsRequest(
-                                List.of(
-                                        new RegisterVenueSeatsRequest.SeatItem("A1", 1, 1, null),
-                                        new RegisterVenueSeatsRequest.SeatItem("A2", 1, 2, null)
-                                )
-                        ))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.createdCount").value(2));
-
         mockMvc.perform(post("/api/admin/venues/{venueId}/sections", venue.getId())
                         .header("Authorization", bearer(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json(new RegisterVenueSectionsRequest(
                                 List.of(
-                                        new RegisterVenueSectionsRequest.SectionItem("R", "GENERAL_ADMISSION"),
-                                        new RegisterVenueSectionsRequest.SectionItem("S", "GENERAL_ADMISSION")
+                                        new RegisterVenueSectionsRequest.SectionItem("A", "ASSIGNED_SEAT"),
+                                        new RegisterVenueSectionsRequest.SectionItem("B", "ASSIGNED_SEAT")
                                 )
                         ))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.createdCount").value(2));
+
+        List<Section> sections = sectionRepository.findAllByVenueIdAndNameIn(venue.getId(), List.of("A", "B"));
+
+        mockMvc.perform(post("/api/admin/venues/{venueId}/seats", venue.getId())
+                        .header("Authorization", bearer(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(json(new RegisterVenueSeatsRequest(
+                                List.of(
+                                        new RegisterVenueSeatsRequest.SeatItem("A1", 1, 1, sections.get(0).getId()),
+                                        new RegisterVenueSeatsRequest.SeatItem("A2", 1, 2, sections.get(0).getId())
+                                )
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.createdCount").value(2));
+
+        mockMvc.perform(post("/api/admin/venues/{venueId}/seats", venue.getId())
+                        .header("Authorization", bearer(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(json(new RegisterVenueSeatsRequest(
+                                List.of(
+                                        new RegisterVenueSeatsRequest.SeatItem("A3", 1, 3, null)
+                                )
+                        ))))
+                .andExpect(status().isBadRequest());
 
         mockMvc.perform(get("/api/admin/venues/{venueId}/seats", venue.getId())
                         .header("Authorization", bearer(adminToken))
@@ -198,12 +211,12 @@ class AdminControllerIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sections.length()").value(2))
-                .andExpect(jsonPath("$.sections[0].name").value("R"))
+                .andExpect(jsonPath("$.sections[0].name").value("A"))
                 .andExpect(jsonPath("$.sections[0].sectionId").isNumber())
-                .andExpect(jsonPath("$.sections[1].name").value("S"));
+                .andExpect(jsonPath("$.sections[1].name").value("B"));
 
         assertThat(seatRepository.findAllByVenueIdAndLabelIn(venue.getId(), List.of("A1", "A2"))).hasSize(2);
-        assertThat(sectionRepository.findAllByVenueIdAndNameIn(venue.getId(), List.of("R", "S"))).hasSize(2);
+        assertThat(sectionRepository.findAllByVenueIdAndNameIn(venue.getId(), List.of("A", "B"))).hasSize(2);
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.ticketinglab.admin.presentation.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.util.List;
@@ -14,7 +15,7 @@ public record RegisterVenueSeatsRequest(
             @NotBlank String label,
             @Positive Integer rowNo,
             @Positive Integer colNo,
-            @Positive Long sectionId
+            @NotNull @Positive Long sectionId
     ) {
     }
 }
