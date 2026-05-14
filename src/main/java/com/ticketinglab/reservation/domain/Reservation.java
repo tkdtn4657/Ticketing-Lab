@@ -145,13 +145,7 @@ public class Reservation {
     }
 
     private void addItem(HoldItem holdItem) {
-        if (holdItem.getSeatId() != null) {
-            items.add(ReservationItem.seat(this, holdItem.getSeatId(), holdItem.getUnitPrice()));
-            totalAmount += holdItem.getUnitPrice();
-            return;
-        }
-
-        items.add(ReservationItem.section(this, holdItem.getSectionId(), holdItem.getQty(), holdItem.getUnitPrice()));
-        totalAmount += holdItem.getQty() * holdItem.getUnitPrice();
+        items.add(ReservationItem.seat(this, holdItem.getSeatId(), holdItem.getUnitPrice()));
+        totalAmount += holdItem.getUnitPrice();
     }
 }

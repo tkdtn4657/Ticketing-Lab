@@ -437,7 +437,7 @@ function renderEmptyReservationItems() {
     dom.reservationItemListView.innerHTML = `
         <article class="empty-panel">
             <strong>아직 조회된 예약이 없습니다.</strong>
-            <p class="placeholder-copy">예약을 생성하거나 reservationId로 조회하면 이 영역에 seat/section item과 단가 정보가 표시됩니다.</p>
+            <p class="placeholder-copy">예약을 생성하거나 reservationId로 조회하면 이 영역에 seat item과 단가 정보가 표시됩니다.</p>
         </article>
     `;
 }
@@ -449,21 +449,18 @@ function renderReservationItems() {
     }
 
     dom.reservationItemListView.innerHTML = state.items.map((item) => {
-        const isSeat = item.type === "SEAT";
-        const targetId = isSeat ? item.seatId : item.sectionId;
         return `
-            <article class="inventory-card ${isSeat ? "available" : "section-card"}">
+            <article class="inventory-card available">
                 <div class="inventory-head">
                     <div>
                         <h3>${escapeHtml(item.type)}</h3>
-                        <p class="muted">${isSeat ? "seatId" : "sectionId"} ${escapeHtml(targetId)}</p>
+                        <p class="muted">seatId ${escapeHtml(item.seatId)}</p>
                     </div>
-                    <span class="status-token ${isSeat ? "available" : "section-remaining"}">${escapeHtml(item.type)}</span>
+                    <span class="status-token available">${escapeHtml(item.type)}</span>
                 </div>
                 <div class="token-row">
-                    <span class="token">qty ${escapeHtml(item.qty)}</span>
                     <span class="token">unitPrice ${escapeHtml(item.unitPrice)}</span>
-                    <span class="token">${isSeat ? `seatId ${escapeHtml(item.seatId)}` : `sectionId ${escapeHtml(item.sectionId)}`}</span>
+                    <span class="token">seatId ${escapeHtml(item.seatId)}</span>
                 </div>
             </article>
         `;
@@ -542,30 +539,39 @@ function renderSeatList() {
 function renderEmptySectionList() {
     dom.sectionListView.innerHTML = `
         <article class="empty-panel">
-            <strong>불러온 구역 정보가 없습니다.</strong>
-            <p class="placeholder-copy">예약 상세를 불러온 뒤 가용성 조회를 실행하면 이 영역에 구역별 remainingQty가 표시됩니다.</p>
+            <strong>불러온 좌석 구역 정보가 없습니다.</strong>
+            <p class="placeholder-copy">가용성 조회를 실행하면 seats 배열을 기준으로 구역별 좌석 수가 표시됩니다.</p>
         </article>
     `;
 }
 
 function renderSectionList() {
-    if (!state.sections.length) {
+    if (!state.seats.length) {
         renderEmptySectionList();
         return;
     }
 
-    dom.sectionListView.innerHTML = state.sections.map((section) => `
+    const sections = Object.values(state.seats.reduce((groups, seat) => {
+        const key = seat.sectionId ?? seat.sectionName ?? "미지정";
+        const name = seat.sectionName || "미지정";
+        groups[key] ??= { sectionId: seat.sectionId, name, total: 0, available: 0 };
+        groups[key].total += 1;
+        groups[key].available += seat.available ? 1 : 0;
+        return groups;
+    }, {}));
+
+    dom.sectionListView.innerHTML = sections.map((section) => `
         <article class="inventory-card section-card">
             <div class="inventory-head">
                 <div>
-                    <h3>${escapeHtml(section.name || `Section #${section.sectionId}`)}</h3>
+                    <h3>${escapeHtml(section.name)}</h3>
                     <p class="muted">sectionId ${escapeHtml(section.sectionId)}</p>
                 </div>
-                <span class="status-token section-remaining">remaining ${escapeHtml(section.remainingQty)}</span>
+                <span class="status-token section-remaining">${escapeHtml(section.available)}/${escapeHtml(section.total)}</span>
             </div>
             <div class="meta-row">
-                <span class="token">price ${escapeHtml(section.price)}</span>
-                <span class="token">remainingQty ${escapeHtml(section.remainingQty)}</span>
+                <span class="token">available ${escapeHtml(section.available)}</span>
+                <span class="token">total ${escapeHtml(section.total)}</span>
             </div>
         </article>
     `).join("");
@@ -640,7 +646,7 @@ async function fetchAvailability(showId, { silent = false } = {}) {
         setState({
             selectedShowId: showId,
             seats: Array.isArray(result.body.seats) ? result.body.seats : [],
-            sections: Array.isArray(result.body.sections) ? result.body.sections : []
+            sections: []
         });
     } else if (result) {
         setState({

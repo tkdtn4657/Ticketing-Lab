@@ -32,9 +32,6 @@ public class ReservationItem {
     @Column(name = "seat_id")
     private Long seatId;
 
-    @Column(name = "section_id")
-    private Long sectionId;
-
     @Column(name = "qty", nullable = false)
     private int qty;
 
@@ -49,23 +46,17 @@ public class ReservationItem {
             Reservation reservation,
             ReservationItemType type,
             Long seatId,
-            Long sectionId,
             int qty,
             int unitPrice
     ) {
         this.reservation = reservation;
         this.type = type;
         this.seatId = seatId;
-        this.sectionId = sectionId;
         this.qty = qty;
         this.unitPrice = unitPrice;
     }
 
     public static ReservationItem seat(Reservation reservation, Long seatId, int unitPrice) {
-        return new ReservationItem(reservation, ReservationItemType.SEAT, seatId, null, 1, unitPrice);
-    }
-
-    public static ReservationItem section(Reservation reservation, Long sectionId, int qty, int unitPrice) {
-        return new ReservationItem(reservation, ReservationItemType.SECTION, null, sectionId, qty, unitPrice);
+        return new ReservationItem(reservation, ReservationItemType.SEAT, seatId, 1, unitPrice);
     }
 }

@@ -2,11 +2,8 @@ package com.ticketinglab.show.application;
 
 import com.ticketinglab.event.domain.ShowRepository;
 import com.ticketinglab.expiration.application.ExpiredResourceCleanupService;
-import com.ticketinglab.show.domain.ShowSectionInventory;
-import com.ticketinglab.show.domain.ShowSectionInventoryRepository;
 import com.ticketinglab.show.domain.ShowSeat;
 import com.ticketinglab.show.domain.ShowSeatRepository;
-import com.ticketinglab.show.presentation.dto.SectionAvailabilityResponse;
 import com.ticketinglab.show.presentation.dto.ShowAvailabilityResponse;
 import com.ticketinglab.show.presentation.dto.ShowSeatAvailabilityResponse;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +22,6 @@ public class GetShowAvailabilityUseCase {
 
     private final ShowRepository showRepository;
     private final ShowSeatRepository showSeatRepository;
-    private final ShowSectionInventoryRepository showSectionInventoryRepository;
     private final ExpiredResourceCleanupService cleanupService;
 
     @Transactional
@@ -40,12 +36,7 @@ public class GetShowAvailabilityUseCase {
                 .map(ShowSeatAvailabilityResponse::from)
                 .toList();
 
-        List<SectionAvailabilityResponse> sections = showSectionInventoryRepository.findAllByShowId(showId).stream()
-                .sorted(sectionAvailabilityOrder())
-                .map(SectionAvailabilityResponse::from)
-                .toList();
-
-        return new ShowAvailabilityResponse(seats, sections);
+        return new ShowAvailabilityResponse(seats);
     }
 
     private Comparator<ShowSeat> seatAvailabilityOrder() {
@@ -55,9 +46,4 @@ public class GetShowAvailabilityUseCase {
                 .thenComparing(showSeat -> showSeat.getSeat().getId());
     }
 
-    private Comparator<ShowSectionInventory> sectionAvailabilityOrder() {
-        return Comparator
-                .comparing((ShowSectionInventory inventory) -> inventory.getSection().getName())
-                .thenComparing(inventory -> inventory.getSection().getId());
-    }
 }

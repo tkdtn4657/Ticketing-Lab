@@ -100,27 +100,6 @@ public interface ReservationJpaRepository extends JpaRepository<Reservation, Str
             @Param("seatIds") Collection<Long> seatIds
     );
 
-    @Query("""
-            select distinct reservation
-            from Reservation reservation
-            left join fetch reservation.items
-            where reservation.showId = :showId
-              and reservation.status = :status
-              and reservation.expiresAt <= :now
-              and exists (
-                    select 1
-                    from ReservationItem reservationItem
-                    where reservationItem.reservation = reservation
-                      and reservationItem.sectionId in :sectionIds
-              )
-            """)
-    List<Reservation> findAllByShowIdAndStatusAndExpiresAtLessThanEqualAndSectionIdIn(
-            @Param("showId") Long showId,
-            @Param("status") ReservationStatus status,
-            @Param("now") LocalDateTime now,
-            @Param("sectionIds") Collection<Long> sectionIds
-    );
-
     default List<Reservation> findAllPendingExpiredByUserId(Long userId, LocalDateTime now) {
         return findAllByUserIdAndStatusAndExpiresAtLessThanEqual(userId, ReservationStatus.PENDING_PAYMENT, now);
     }
@@ -146,16 +125,4 @@ public interface ReservationJpaRepository extends JpaRepository<Reservation, Str
         );
     }
 
-    default List<Reservation> findAllPendingExpiredByShowIdAndSectionIdIn(
-            Long showId,
-            LocalDateTime now,
-            Collection<Long> sectionIds
-    ) {
-        return findAllByShowIdAndStatusAndExpiresAtLessThanEqualAndSectionIdIn(
-                showId,
-                ReservationStatus.PENDING_PAYMENT,
-                now,
-                sectionIds
-        );
-    }
 }

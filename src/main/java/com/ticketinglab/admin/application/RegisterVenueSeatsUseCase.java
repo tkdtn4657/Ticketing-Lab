@@ -87,11 +87,6 @@ public class RegisterVenueSeatsUseCase {
             throw new ResponseStatusException(BAD_REQUEST, "invalid section ids");
         }
 
-        boolean hasGeneralAdmissionSection = sections.stream().anyMatch(Section::isGeneralAdmissionType);
-        if (hasGeneralAdmissionSection) {
-            throw new ResponseStatusException(BAD_REQUEST, "seats can be assigned only to assigned-seat sections");
-        }
-
         return sections.stream().collect(Collectors.toMap(Section::getId, Function.identity()));
     }
 }

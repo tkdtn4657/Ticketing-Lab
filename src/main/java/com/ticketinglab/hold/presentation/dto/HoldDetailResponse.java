@@ -12,8 +12,7 @@ public record HoldDetailResponse(
 ) {
     private static final Comparator<HoldItem> ITEM_ORDER = Comparator
             .comparing(HoldItem::getType)
-            .thenComparing(HoldItem::getSeatId, Comparator.nullsLast(Long::compareTo))
-            .thenComparing(HoldItem::getSectionId, Comparator.nullsLast(Long::compareTo));
+            .thenComparing(HoldItem::getSeatId, Comparator.nullsLast(Long::compareTo));
 
     public static HoldDetailResponse from(Hold hold) {
         List<HoldItemResponse> items = hold.getItems().stream()

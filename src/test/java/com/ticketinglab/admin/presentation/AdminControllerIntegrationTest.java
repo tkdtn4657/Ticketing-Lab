@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ticketinglab.admin.presentation.dto.CreateEventRequest;
 import com.ticketinglab.admin.presentation.dto.CreateShowRequest;
-import com.ticketinglab.admin.presentation.dto.CreateShowSectionInventoriesRequest;
 import com.ticketinglab.admin.presentation.dto.CreateShowSeatsRequest;
 import com.ticketinglab.admin.presentation.dto.RegisterVenueSectionsRequest;
 import com.ticketinglab.admin.presentation.dto.RegisterVenueSeatsRequest;
@@ -18,7 +17,6 @@ import com.ticketinglab.event.domain.EventRepository;
 import com.ticketinglab.event.domain.EventStatus;
 import com.ticketinglab.event.domain.Show;
 import com.ticketinglab.event.domain.ShowRepository;
-import com.ticketinglab.show.domain.ShowSectionInventoryRepository;
 import com.ticketinglab.show.domain.ShowSeatRepository;
 import com.ticketinglab.user.domain.User;
 import com.ticketinglab.user.domain.UserRepository;
@@ -26,7 +24,6 @@ import com.ticketinglab.venue.domain.Seat;
 import com.ticketinglab.venue.domain.SeatRepository;
 import com.ticketinglab.venue.domain.Section;
 import com.ticketinglab.venue.domain.SectionRepository;
-import com.ticketinglab.venue.domain.SectionSaleType;
 import com.ticketinglab.venue.domain.Venue;
 import com.ticketinglab.venue.domain.VenueRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -79,9 +76,6 @@ class AdminControllerIntegrationTest {
 
     @Autowired
     private ShowSeatRepository showSeatRepository;
-
-    @Autowired
-    private ShowSectionInventoryRepository showSectionInventoryRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -164,8 +158,8 @@ class AdminControllerIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json(new RegisterVenueSectionsRequest(
                                 List.of(
-                                        new RegisterVenueSectionsRequest.SectionItem("A", "ASSIGNED_SEAT"),
-                                        new RegisterVenueSectionsRequest.SectionItem("B", "ASSIGNED_SEAT")
+                                        new RegisterVenueSectionsRequest.SectionItem("A"),
+                                        new RegisterVenueSectionsRequest.SectionItem("B")
                                 )
                         ))))
                 .andExpect(status().isOk())
@@ -220,27 +214,22 @@ class AdminControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("ADM section sale type separates assigned seats from quantity inventory")
-    void adminSectionSaleType_enforcesInventoryKind() throws Exception {
+    @DisplayName("ADM-006 requires each sale seat to belong to a venue section")
+    void adm006_createShowSeats_requiresSectionMappedSeats() throws Exception {
         String adminToken = createAccessToken("ADMIN");
-        Venue venue = venueRepository.save(Venue.create("TYPE-HALL", "Type Hall", "Seoul"));
-        Event event = eventRepository.save(Event.create("Type Event", "Section type", EventStatus.PUBLISHED));
+        Venue venue = venueRepository.save(Venue.create("SECTION-SEAT-HALL", "Section Seat Hall", "Seoul"));
+        Event event = eventRepository.save(Event.create("Section Seat Event", "Seat inventory", EventStatus.PUBLISHED));
         Show show = showRepository.save(Show.schedule(event, LocalDateTime.of(2026, 7, 2, 19, 0), venue.getId()));
-        Section assignedSection = sectionRepository.save(
-                Section.create("A", SectionSaleType.ASSIGNED_SEAT, venue.getId())
-        );
-        Section generalSection = sectionRepository.save(
-                Section.create("B", SectionSaleType.GENERAL_ADMISSION, venue.getId())
-        );
-        Seat assignedSeat = seatRepository.save(Seat.create("A-1", 1, 1, venue.getId(), assignedSection));
-        Seat quantitySeat = seatRepository.save(Seat.create("B-1", 1, 1, venue.getId(), generalSection));
+        Section section = sectionRepository.save(Section.create("A", venue.getId()));
+        Seat sectionSeat = seatRepository.save(Seat.create("A-1", 1, 1, venue.getId(), section));
+        Seat seatWithoutSection = seatRepository.save(Seat.create("NO-SECTION-1", 1, 2, venue.getId()));
 
         mockMvc.perform(post("/api/admin/shows/{showId}/show-seats", show.getId())
                         .header("Authorization", bearer(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json(new CreateShowSeatsRequest(
-                                List.of(new CreateShowSeatsRequest.Item(assignedSeat.getId(), 150000))
+                                List.of(new CreateShowSeatsRequest.Item(sectionSeat.getId(), 150000))
                         ))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.createdCount").value(1));
@@ -250,28 +239,9 @@ class AdminControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json(new CreateShowSeatsRequest(
-                                List.of(new CreateShowSeatsRequest.Item(quantitySeat.getId(), 150000))
+                                List.of(new CreateShowSeatsRequest.Item(seatWithoutSection.getId(), 150000))
                         ))))
                 .andExpect(status().isBadRequest());
-
-        mockMvc.perform(post("/api/admin/shows/{showId}/section-inventories", show.getId())
-                        .header("Authorization", bearer(adminToken))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .content(json(new CreateShowSectionInventoriesRequest(
-                                List.of(new CreateShowSectionInventoriesRequest.Item(assignedSection.getId(), 120000, 100))
-                        ))))
-                .andExpect(status().isBadRequest());
-
-        mockMvc.perform(post("/api/admin/shows/{showId}/section-inventories", show.getId())
-                        .header("Authorization", bearer(adminToken))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .content(json(new CreateShowSectionInventoriesRequest(
-                                List.of(new CreateShowSectionInventoriesRequest.Item(generalSection.getId(), 120000, 100))
-                        ))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.createdCount").value(1));
     }
 
     @Test
@@ -457,49 +427,43 @@ class AdminControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("ADM-006 and ADM-007 create show inventory reflected in availability")
-    void adm006_007_createShowInventory_reflectedInAvailability() throws Exception {
+    @DisplayName("ADM-006 creates section seats reflected in availability")
+    void adm006_createShowSeats_reflectedInAvailability() throws Exception {
         String adminToken = createAccessToken("ADMIN");
         Venue venue = venueRepository.save(Venue.create("INCHEON-HALL", "Incheon Hall", "Songdo"));
         Event event = eventRepository.save(Event.create("Rock Festa", "Inventory test", EventStatus.PUBLISHED));
         Show show = showRepository.save(Show.schedule(event, LocalDateTime.of(2026, 5, 1, 19, 0), venue.getId()));
-        Seat seat = seatRepository.save(Seat.create("B1", 2, 1, venue.getId()));
-        Section section = sectionRepository.save(Section.create("VIP", venue.getId()));
+        Section section = sectionRepository.save(Section.create("A구역", venue.getId()));
+        Seat firstSeat = seatRepository.save(Seat.create("A-1", 1, 1, venue.getId(), section));
+        Seat secondSeat = seatRepository.save(Seat.create("A-2", 1, 2, venue.getId(), section));
 
         mockMvc.perform(post("/api/admin/shows/{showId}/show-seats", show.getId())
                         .header("Authorization", bearer(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json(new CreateShowSeatsRequest(
-                                List.of(new CreateShowSeatsRequest.Item(seat.getId(), 150000))
+                                List.of(
+                                        new CreateShowSeatsRequest.Item(firstSeat.getId(), 150000),
+                                        new CreateShowSeatsRequest.Item(secondSeat.getId(), 150000)
+                                )
                         ))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.createdCount").value(1));
+                .andExpect(jsonPath("$.createdCount").value(2));
 
-        mockMvc.perform(post("/api/admin/shows/{showId}/section-inventories", show.getId())
-                        .header("Authorization", bearer(adminToken))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .content(json(new CreateShowSectionInventoriesRequest(
-                                List.of(new CreateShowSectionInventoriesRequest.Item(section.getId(), 120000, 100))
-                        ))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.createdCount").value(1));
-
-        assertThat(showSeatRepository.findAllByShowId(show.getId())).hasSize(1);
-        assertThat(showSectionInventoryRepository.findAllByShowId(show.getId())).hasSize(1);
+        assertThat(showSeatRepository.findAllByShowId(show.getId())).hasSize(2);
 
         mockMvc.perform(get("/api/shows/{showId}/availability", show.getId())
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.seats.length()").value(1))
-                .andExpect(jsonPath("$.seats[0].seatId").value(seat.getId()))
+                .andExpect(jsonPath("$.seats.length()").value(2))
+                .andExpect(jsonPath("$.seats[0].seatId").value(firstSeat.getId()))
+                .andExpect(jsonPath("$.seats[0].sectionId").value(section.getId()))
+                .andExpect(jsonPath("$.seats[0].sectionName").value("A구역"))
                 .andExpect(jsonPath("$.seats[0].price").value(150000))
                 .andExpect(jsonPath("$.seats[0].available").value(true))
-                .andExpect(jsonPath("$.sections.length()").value(1))
-                .andExpect(jsonPath("$.sections[0].sectionId").value(section.getId()))
-                .andExpect(jsonPath("$.sections[0].price").value(120000))
-                .andExpect(jsonPath("$.sections[0].remainingQty").value(100));
+                .andExpect(jsonPath("$.seats[1].seatId").value(secondSeat.getId()))
+                .andExpect(jsonPath("$.seats[1].sectionId").value(section.getId()))
+                .andExpect(jsonPath("$.seats[1].available").value(true));
     }
 
     @Test

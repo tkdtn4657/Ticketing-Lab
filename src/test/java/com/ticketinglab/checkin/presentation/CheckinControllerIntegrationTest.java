@@ -25,6 +25,8 @@ import com.ticketinglab.user.domain.User;
 import com.ticketinglab.user.domain.UserRepository;
 import com.ticketinglab.venue.domain.Seat;
 import com.ticketinglab.venue.domain.SeatRepository;
+import com.ticketinglab.venue.domain.Section;
+import com.ticketinglab.venue.domain.SectionRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -67,6 +69,9 @@ class CheckinControllerIntegrationTest {
 
     @Autowired
     private SeatRepository seatRepository;
+
+    @Autowired
+    private SectionRepository sectionRepository;
 
     @Autowired
     private ShowSeatRepository showSeatRepository;
@@ -195,7 +200,8 @@ class CheckinControllerIntegrationTest {
     private CheckinFixture createFixture() {
         Event event = eventRepository.save(Event.create("Checkin Test", "Checkin flow", EventStatus.PUBLISHED));
         Show show = showRepository.save(Show.schedule(event, LocalDateTime.of(2026, 8, 15, 19, 0), 1301L));
-        Seat seat = seatRepository.save(Seat.create("C1", 3, 1, 1301L));
+        Section section = sectionRepository.save(Section.create("C구역", 1301L));
+        Seat seat = seatRepository.save(Seat.create("C1", 3, 1, 1301L, section));
         showSeatRepository.save(ShowSeat.createAvailable(show, seat, 99000));
         return new CheckinFixture(show, seat);
     }
@@ -239,7 +245,7 @@ class CheckinControllerIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json(new CreateHoldRequest(
                                 fixture.show().getId(),
-                                List.of(new CreateHoldRequest.Item(fixture.seat().getId(), null, null))
+                                List.of(new CreateHoldRequest.Item(fixture.seat().getId()))
                         ))))
                 .andExpect(status().isOk())
                 .andReturn();

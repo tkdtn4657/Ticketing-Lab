@@ -97,8 +97,7 @@ public final class OpenApiExamples {
                   "rowNo": 1,
                   "colNo": 1,
                   "sectionId": 101,
-                  "sectionName": "A",
-                  "sectionSaleType": "ASSIGNED_SEAT",
+                  "sectionName": "A구역",
                   "price": 150000,
                   "available": true
                 },
@@ -108,19 +107,9 @@ public final class OpenApiExamples {
                   "rowNo": 1,
                   "colNo": 2,
                   "sectionId": 101,
-                  "sectionName": "A",
-                  "sectionSaleType": "ASSIGNED_SEAT",
+                  "sectionName": "A구역",
                   "price": 150000,
                   "available": false
-                }
-              ],
-              "sections": [
-                {
-                  "sectionId": 301,
-                  "name": "R",
-                  "saleType": "GENERAL_ADMISSION",
-                  "price": 120000,
-                  "remainingQty": 75
                 }
               ]
             }
@@ -134,8 +123,7 @@ public final class OpenApiExamples {
                   "seatId": 11
                 },
                 {
-                  "sectionId": 21,
-                  "qty": 3
+                  "seatId": 12
                 }
               ]
             }
@@ -161,15 +149,6 @@ public final class OpenApiExamples {
                 {
                   "type": "SEAT",
                   "seatId": 11,
-                  "sectionId": null,
-                  "qty": 1,
-                  "unitPrice": 150000
-                },
-                {
-                  "type": "SECTION",
-                  "seatId": null,
-                  "sectionId": 21,
-                  "qty": 2,
                   "unitPrice": 120000
                 }
               ]
@@ -195,7 +174,7 @@ public final class OpenApiExamples {
                 "reservationId": "c8a01d2c-592a-43d6-9afb-a0df27c0c1c4",
                 "showId": 801,
                 "status": "PENDING_PAYMENT",
-                "totalAmount": 390000,
+                "totalAmount": 120000,
                 "expiresAt": "2026-07-01T19:15:00",
                 "createdAt": "2026-07-01T19:00:00"
               },
@@ -203,15 +182,6 @@ public final class OpenApiExamples {
                 {
                   "type": "SEAT",
                   "seatId": 11,
-                  "sectionId": null,
-                  "qty": 1,
-                  "unitPrice": 150000
-                },
-                {
-                  "type": "SECTION",
-                  "seatId": null,
-                  "sectionId": 21,
-                  "qty": 2,
                   "unitPrice": 120000
                 }
               ]
@@ -240,7 +210,7 @@ public final class OpenApiExamples {
     public static final String PAYMENT_CONFIRM_REQUEST = """
             {
               "reservationId": "c8a01d2c-592a-43d6-9afb-a0df27c0c1c4",
-              "amount": 390000
+              "amount": 120000
             }
             """;
 
@@ -268,7 +238,6 @@ public final class OpenApiExamples {
                   "reservationItemId": 501,
                   "type": "SEAT",
                   "seatId": 11,
-                  "sectionId": null,
                   "serial": "TK-20260701-0001",
                   "qrToken": "qr-token-001",
                   "status": "ISSUED",
@@ -293,7 +262,6 @@ public final class OpenApiExamples {
               "reservationItemId": 501,
               "type": "SEAT",
               "seatId": 11,
-              "sectionId": null,
               "serial": "TK-20260815-0001",
               "qrToken": "qr-token-001",
               "status": "USED",
@@ -343,8 +311,7 @@ public final class OpenApiExamples {
                   "rowNo": 1,
                   "colNo": 1,
                   "sectionId": 101,
-                  "sectionName": "A",
-                  "sectionSaleType": "ASSIGNED_SEAT"
+                  "sectionName": "A구역"
                 },
                 {
                   "seatId": 12,
@@ -352,8 +319,7 @@ public final class OpenApiExamples {
                   "rowNo": 1,
                   "colNo": 2,
                   "sectionId": 101,
-                  "sectionName": "A",
-                  "sectionSaleType": "ASSIGNED_SEAT"
+                  "sectionName": "A구역"
                 }
               ]
             }
@@ -363,12 +329,10 @@ public final class OpenApiExamples {
             {
               "sections": [
                 {
-                  "name": "R",
-                  "saleType": "GENERAL_ADMISSION"
+                  "name": "A구역"
                 },
                 {
-                  "name": "A",
-                  "saleType": "ASSIGNED_SEAT"
+                  "name": "B구역"
                 }
               ]
             }
@@ -379,13 +343,11 @@ public final class OpenApiExamples {
               "sections": [
                 {
                   "sectionId": 21,
-                  "name": "R",
-                  "saleType": "GENERAL_ADMISSION"
+                  "name": "A구역"
                 },
                 {
                   "sectionId": 22,
-                  "name": "A",
-                  "saleType": "ASSIGNED_SEAT"
+                  "name": "B구역"
                 }
               ]
             }
@@ -431,18 +393,6 @@ public final class OpenApiExamples {
                 {
                   "seatId": 11,
                   "price": 150000
-                }
-              ]
-            }
-            """;
-
-    public static final String ADMIN_CREATE_SECTION_INVENTORIES_REQUEST = """
-            {
-              "items": [
-                {
-                  "sectionId": 21,
-                  "price": 120000,
-                  "capacity": 100
                 }
               ]
             }

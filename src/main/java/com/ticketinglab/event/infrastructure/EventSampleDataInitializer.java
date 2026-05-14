@@ -6,8 +6,6 @@ import com.ticketinglab.event.domain.EventStatus;
 import com.ticketinglab.event.domain.Show;
 import com.ticketinglab.event.domain.ShowRepository;
 import com.ticketinglab.event.domain.ShowStatus;
-import com.ticketinglab.show.domain.ShowSectionInventory;
-import com.ticketinglab.show.domain.ShowSectionInventoryRepository;
 import com.ticketinglab.show.domain.ShowSeat;
 import com.ticketinglab.show.domain.ShowSeatRepository;
 import com.ticketinglab.show.domain.ShowSeatStatus;
@@ -15,7 +13,6 @@ import com.ticketinglab.venue.domain.Seat;
 import com.ticketinglab.venue.domain.SeatRepository;
 import com.ticketinglab.venue.domain.Section;
 import com.ticketinglab.venue.domain.SectionRepository;
-import com.ticketinglab.venue.domain.SectionSaleType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -37,7 +34,6 @@ public class EventSampleDataInitializer implements ApplicationRunner {
     private final SeatRepository seatRepository;
     private final SectionRepository sectionRepository;
     private final ShowSeatRepository showSeatRepository;
-    private final ShowSectionInventoryRepository showSectionInventoryRepository;
 
     @Override
     @Transactional
@@ -46,7 +42,7 @@ public class EventSampleDataInitializer implements ApplicationRunner {
             seedSampleEvents();
         }
 
-        if (!showSeatRepository.existsAny() && !showSectionInventoryRepository.existsAny()) {
+        if (!showSeatRepository.existsAny()) {
             seedShowAvailabilitySamples();
         }
     }
@@ -125,10 +121,8 @@ public class EventSampleDataInitializer implements ApplicationRunner {
     }
 
     private VenueInventoryFixture seedVenueInventoryFixture(Long venueId) {
-        Section aSection = sectionRepository.save(Section.create("A", SectionSaleType.ASSIGNED_SEAT, venueId));
-        Section bSection = sectionRepository.save(Section.create("B", SectionSaleType.ASSIGNED_SEAT, venueId));
-        Section floor = sectionRepository.save(Section.create("FLOOR", SectionSaleType.GENERAL_ADMISSION, venueId));
-        Section balcony = sectionRepository.save(Section.create("BALCONY", SectionSaleType.GENERAL_ADMISSION, venueId));
+        Section aSection = sectionRepository.save(Section.create("A구역", venueId));
+        Section bSection = sectionRepository.save(Section.create("B구역", venueId));
 
         Seat a1 = seatRepository.save(Seat.create("A1", 1, 1, venueId, aSection));
         Seat a2 = seatRepository.save(Seat.create("A2", 1, 2, venueId, aSection));
@@ -136,7 +130,7 @@ public class EventSampleDataInitializer implements ApplicationRunner {
         Seat b1 = seatRepository.save(Seat.create("B1", 2, 1, venueId, bSection));
         Seat b2 = seatRepository.save(Seat.create("B2", 2, 2, venueId, bSection));
 
-        return new VenueInventoryFixture(a1, a2, a3, b1, b2, floor, balcony);
+        return new VenueInventoryFixture(a1, a2, a3, b1, b2);
     }
 
     private void seedScheduledShowAvailability(Show show, VenueInventoryFixture fixture) {
@@ -146,12 +140,6 @@ public class EventSampleDataInitializer implements ApplicationRunner {
         showSeatRepository.save(ShowSeat.create(show, fixture.b1(), 110000, ShowSeatStatus.AVAILABLE));
         showSeatRepository.save(ShowSeat.create(show, fixture.b2(), 110000, ShowSeatStatus.AVAILABLE));
 
-        showSectionInventoryRepository.save(
-                ShowSectionInventory.create(show, fixture.floor(), 99000, 180, 96, 12)
-        );
-        showSectionInventoryRepository.save(
-                ShowSectionInventory.create(show, fixture.balcony(), 77000, 90, 34, 6)
-        );
     }
 
     private void seedSoldOutShowAvailability(Show show, VenueInventoryFixture fixture, Long venueId) {
@@ -165,12 +153,6 @@ public class EventSampleDataInitializer implements ApplicationRunner {
         showSeatRepository.save(ShowSeat.create(show, fixture.b1(), 110000, ShowSeatStatus.RESERVED));
         showSeatRepository.save(ShowSeat.create(show, fixture.b2(), 110000, ShowSeatStatus.SOLD));
 
-        showSectionInventoryRepository.save(
-                ShowSectionInventory.create(show, fixture.floor(), 99000, 180, 180, 0)
-        );
-        showSectionInventoryRepository.save(
-                ShowSectionInventory.create(show, fixture.balcony(), 77000, 90, 88, 2)
-        );
     }
 
     private void seedMatineeShowAvailability(Show show, VenueInventoryFixture fixture, Long venueId) {
@@ -184,12 +166,6 @@ public class EventSampleDataInitializer implements ApplicationRunner {
         showSeatRepository.save(ShowSeat.create(show, fixture.b1(), 98000, ShowSeatStatus.HELD));
         showSeatRepository.save(ShowSeat.create(show, fixture.b2(), 98000, ShowSeatStatus.AVAILABLE));
 
-        showSectionInventoryRepository.save(
-                ShowSectionInventory.create(show, fixture.floor(), 92000, 180, 48, 8)
-        );
-        showSectionInventoryRepository.save(
-                ShowSectionInventory.create(show, fixture.balcony(), 69000, 90, 18, 4)
-        );
     }
 
     private Show saveShow(Event event, LocalDateTime startAt, ShowStatus status, Long venueId) {
@@ -201,9 +177,7 @@ public class EventSampleDataInitializer implements ApplicationRunner {
             Seat a2,
             Seat a3,
             Seat b1,
-            Seat b2,
-            Section floor,
-            Section balcony
+            Seat b2
     ) {
     }
 }

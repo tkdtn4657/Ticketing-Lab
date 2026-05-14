@@ -18,5 +18,4 @@ public interface ReservationRepository {
     List<String> findPendingExpiredIdsByShowId(Long showId, LocalDateTime now, int limit);
     List<Reservation> findAllPendingExpiredByUserId(Long userId, LocalDateTime now);
     List<Reservation> findAllPendingExpiredByShowIdAndSeatIdIn(Long showId, Collection<Long> seatIds, LocalDateTime now);
-    List<Reservation> findAllPendingExpiredByShowIdAndSectionIdIn(Long showId, Collection<Long> sectionIds, LocalDateTime now);
 }

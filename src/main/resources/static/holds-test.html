@@ -23,7 +23,7 @@
                 <li><strong>USER Access Token</strong>을 입력해 저장합니다.</li>
                 <li><strong>Show ID</strong>와 <code>items</code> JSON을 채워 <code>POST /api/holds</code>를 실행합니다.</li>
                 <li>생성된 <code>holdId</code>로 상세 조회를 호출해 상태와 item 가격을 확인합니다.</li>
-                <li><strong>가용성 조회</strong>로 좌석 <code>HELD</code>, 구역 <code>remainingQty</code> 변화를 확인합니다.</li>
+                <li><strong>가용성 조회</strong>로 선택 좌석의 <code>available=false</code> 반영을 확인합니다.</li>
                 <li><strong>홀드 취소</strong> 후 다시 가용성을 조회해 자원이 복구됐는지 확인합니다.</li>
             </ol>
         </div>
@@ -82,7 +82,7 @@
                         <p class="eyebrow">STEP 1</p>
                         <h2>홀드 생성</h2>
                     </div>
-                    <p class="section-copy">좌석 홀드는 <code>{"seatId": 1}</code>, 구역 홀드는 <code>{"sectionId": 1, "qty": 2}</code> 형태로 보냅니다.</p>
+                    <p class="section-copy">홀드 아이템은 판매 좌석 기준으로 <code>{"seatId": 1}</code> 형태만 보냅니다.</p>
                 </div>
 
                 <div class="form-grid two-col">
@@ -115,10 +115,9 @@
                 <div class="note-box">
                     <strong>체크 포인트</strong>
                     <ul>
-                        <li>좌석과 구역 item을 하나의 요청에 함께 넣을 수 있습니다.</li>
-                        <li>같은 seatId 또는 sectionId를 중복으로 넣으면 <code>409 Conflict</code>가 내려옵니다.</li>
-                        <li>존재하지 않는 seatId/sectionId를 보내면 <code>400 Bad Request</code>가 내려옵니다.</li>
-                        <li>좌석은 홀드 후 <code>available=false</code>, 구역은 <code>remainingQty</code> 감소로 확인합니다.</li>
+                        <li>같은 seatId를 중복으로 넣으면 <code>409 Conflict</code>가 내려옵니다.</li>
+                        <li>존재하지 않는 seatId를 보내면 <code>400 Bad Request</code>가 내려옵니다.</li>
+                        <li>좌석은 홀드 후 <code>available=false</code>로 확인합니다.</li>
                     </ul>
                 </div>
             </section>
@@ -192,8 +191,8 @@
             <section class="card board-card">
                 <div class="section-head compact-head">
                     <div>
-                        <p class="eyebrow">SECTIONS</p>
-                        <h2>구역 잔여 현황</h2>
+                        <p class="eyebrow">SECTION MAP</p>
+                        <h2>좌석 구역 현황</h2>
                     </div>
                     <span id="sections-summary-badge" class="status idle">No Sections Loaded</span>
                 </div>

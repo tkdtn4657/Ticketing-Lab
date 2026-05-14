@@ -7,7 +7,6 @@ import com.ticketinglab.hold.domain.HoldRepository;
 import com.ticketinglab.hold.presentation.dto.CreateHoldRequest;
 import com.ticketinglab.hold.presentation.dto.CreateHoldResponse;
 import com.ticketinglab.reservation.application.ReservationResourceManager;
-import com.ticketinglab.show.domain.ShowSectionInventory;
 import com.ticketinglab.show.domain.ShowSeat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,14 +47,12 @@ public class CreateHoldUseCase {
         reservationResourceManager.expirePendingReservations(
                 show.getId(),
                 requestedItems.seatIds(),
-                requestedItems.sectionIds(),
                 now
         );
 
         HoldResourceManager.LockedResources lockedResources = holdResourceManager.prepareForCreate(
                 show.getId(),
                 requestedItems.seatIds(),
-                requestedItems.sectionIds(),
                 now
         );
 
@@ -71,38 +68,15 @@ public class CreateHoldUseCase {
     private RequestedItems normalize(List<CreateHoldRequest.Item> items) {
         List<RequestedItem> normalizedItems = new ArrayList<>();
         Set<Long> seatIds = new LinkedHashSet<>();
-        Set<Long> sectionIds = new LinkedHashSet<>();
 
         for (CreateHoldRequest.Item item : items) {
-            boolean hasSeat = item.seatId() != null;
-            boolean hasSection = item.sectionId() != null;
-
-            if (hasSeat == hasSection) {
-                throw new ResponseStatusException(BAD_REQUEST, "invalid hold items");
+            if (!seatIds.add(item.seatId())) {
+                throw new ResponseStatusException(CONFLICT, "duplicate seat ids");
             }
-
-            if (hasSeat) {
-                int quantity = item.qty() == null ? 1 : item.qty();
-                if (quantity != 1) {
-                    throw new ResponseStatusException(BAD_REQUEST, "seat quantity must be 1");
-                }
-                if (!seatIds.add(item.seatId())) {
-                    throw new ResponseStatusException(CONFLICT, "duplicate seat ids");
-                }
-                normalizedItems.add(RequestedItem.seat(item.seatId()));
-                continue;
-            }
-
-            if (item.qty() == null) {
-                throw new ResponseStatusException(BAD_REQUEST, "section quantity required");
-            }
-            if (!sectionIds.add(item.sectionId())) {
-                throw new ResponseStatusException(CONFLICT, "duplicate section ids");
-            }
-            normalizedItems.add(RequestedItem.section(item.sectionId(), item.qty()));
+            normalizedItems.add(RequestedItem.seat(item.seatId()));
         }
 
-        return new RequestedItems(normalizedItems, seatIds, sectionIds);
+        return new RequestedItems(normalizedItems, seatIds);
     }
 
     private void validateResourceExistence(
@@ -112,9 +86,6 @@ public class CreateHoldUseCase {
         if (lockedResources.seatById().size() != requestedItems.seatIds().size()) {
             throw new ResponseStatusException(BAD_REQUEST, "invalid seat ids");
         }
-        if (lockedResources.sectionById().size() != requestedItems.sectionIds().size()) {
-            throw new ResponseStatusException(BAD_REQUEST, "invalid section ids");
-        }
     }
 
     private void applyHoldItems(
@@ -123,49 +94,28 @@ public class CreateHoldUseCase {
             HoldResourceManager.LockedResources lockedResources
     ) {
         for (RequestedItem requestedItem : requestedItems) {
-            if (requestedItem.isSeat()) {
-                ShowSeat showSeat = lockedResources.seatById().get(requestedItem.seatId());
-                try {
-                    showSeat.hold();
-                } catch (IllegalStateException exception) {
-                    throw new ResponseStatusException(CONFLICT, exception.getMessage());
-                }
-                hold.addSeatItem(requestedItem.seatId(), showSeat.getPrice());
-                continue;
-            }
-
-            ShowSectionInventory inventory = lockedResources.sectionById().get(requestedItem.sectionId());
+            ShowSeat showSeat = lockedResources.seatById().get(requestedItem.seatId());
             try {
-                inventory.hold(requestedItem.qty());
+                showSeat.hold();
             } catch (IllegalStateException exception) {
                 throw new ResponseStatusException(CONFLICT, exception.getMessage());
             }
-            hold.addSectionItem(requestedItem.sectionId(), requestedItem.qty(), inventory.getPrice());
+            hold.addSeatItem(requestedItem.seatId(), showSeat.getPrice());
         }
     }
 
     private record RequestedItems(
             List<RequestedItem> items,
-            Set<Long> seatIds,
-            Set<Long> sectionIds
+            Set<Long> seatIds
     ) {
     }
 
     private record RequestedItem(
-            Long seatId,
-            Long sectionId,
-            int qty
+            Long seatId
     ) {
         static RequestedItem seat(Long seatId) {
-            return new RequestedItem(seatId, null, 1);
+            return new RequestedItem(seatId);
         }
 
-        static RequestedItem section(Long sectionId, int qty) {
-            return new RequestedItem(null, sectionId, qty);
-        }
-
-        boolean isSeat() {
-            return seatId != null;
-        }
     }
 }

@@ -15,8 +15,6 @@ import com.ticketinglab.hold.domain.Hold;
 import com.ticketinglab.hold.domain.HoldRepository;
 import com.ticketinglab.hold.domain.HoldStatus;
 import com.ticketinglab.hold.presentation.dto.CreateHoldRequest;
-import com.ticketinglab.show.domain.ShowSectionInventory;
-import com.ticketinglab.show.domain.ShowSectionInventoryRepository;
 import com.ticketinglab.show.domain.ShowSeat;
 import com.ticketinglab.show.domain.ShowSeatRepository;
 import com.ticketinglab.show.domain.ShowSeatStatus;
@@ -76,9 +74,6 @@ class HoldControllerIntegrationTest {
     private ShowSeatRepository showSeatRepository;
 
     @Autowired
-    private ShowSectionInventoryRepository showSectionInventoryRepository;
-
-    @Autowired
     private HoldRepository holdRepository;
 
     @Autowired
@@ -114,8 +109,8 @@ class HoldControllerIntegrationTest {
                         .content(json(new CreateHoldRequest(
                                 fixture.show().getId(),
                                 List.of(
-                                        new CreateHoldRequest.Item(fixture.seat().getId(), null, null),
-                                        new CreateHoldRequest.Item(null, fixture.section().getId(), 3)
+                                        new CreateHoldRequest.Item(fixture.firstSeat().getId()),
+                                        new CreateHoldRequest.Item(fixture.secondSeat().getId())
                                 )
                         ))))
                 .andExpect(status().isOk())
@@ -128,10 +123,9 @@ class HoldControllerIntegrationTest {
 
         assertThat(hold.getStatus()).isEqualTo(HoldStatus.ACTIVE);
         assertThat(hold.getItems()).hasSize(2);
-        assertThat(showSeatRepository.findAllByShowId(fixture.show().getId()).get(0).getStatus())
-                .isEqualTo(ShowSeatStatus.HELD);
-        assertThat(showSectionInventoryRepository.findAllByShowId(fixture.show().getId()).get(0).getHoldQty())
-                .isEqualTo(3);
+        assertThat(showSeatRepository.findAllByShowId(fixture.show().getId()))
+                .extracting(ShowSeat::getStatus)
+                .containsOnly(ShowSeatStatus.HELD);
     }
 
     @Test
@@ -139,7 +133,11 @@ class HoldControllerIntegrationTest {
     void hld002_getHold_returnsHoldAndItems() throws Exception {
         UserSession session = createUserSession();
         HoldFixture fixture = createFixture();
-        String holdId = createHold(session.accessToken(), fixture.show().getId(), fixture.seat().getId(), fixture.section().getId(), 2);
+        String holdId = createHold(
+                session.accessToken(),
+                fixture.show().getId(),
+                List.of(fixture.firstSeat().getId(), fixture.secondSeat().getId())
+        );
 
         mockMvc.perform(get("/api/holds/{holdId}", holdId)
                         .header("Authorization", bearer(session.accessToken()))
@@ -150,11 +148,9 @@ class HoldControllerIntegrationTest {
                 .andExpect(jsonPath("$.hold.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.items.length()").value(2))
                 .andExpect(jsonPath("$.items[0].type").value("SEAT"))
-                .andExpect(jsonPath("$.items[0].seatId").value(fixture.seat().getId()))
-                .andExpect(jsonPath("$.items[0].qty").value(1))
-                .andExpect(jsonPath("$.items[1].type").value("SECTION"))
-                .andExpect(jsonPath("$.items[1].sectionId").value(fixture.section().getId()))
-                .andExpect(jsonPath("$.items[1].qty").value(2));
+                .andExpect(jsonPath("$.items[0].seatId").value(fixture.firstSeat().getId()))
+                .andExpect(jsonPath("$.items[1].type").value("SEAT"))
+                .andExpect(jsonPath("$.items[1].seatId").value(fixture.secondSeat().getId()));
     }
 
     @Test
@@ -164,13 +160,10 @@ class HoldControllerIntegrationTest {
         HoldFixture fixture = createFixture();
 
         ShowSeat showSeat = showSeatRepository.findAllByShowId(fixture.show().getId()).get(0);
-        ShowSectionInventory inventory = showSectionInventoryRepository.findAllByShowId(fixture.show().getId()).get(0);
         showSeat.hold();
-        inventory.hold(2);
 
         Hold hold = Hold.create(session.userId(), fixture.show().getId(), LocalDateTime.now().minusMinutes(1));
-        hold.addSeatItem(fixture.seat().getId(), showSeat.getPrice());
-        hold.addSectionItem(fixture.section().getId(), 2, inventory.getPrice());
+        hold.addSeatItem(fixture.firstSeat().getId(), showSeat.getPrice());
         holdRepository.save(hold);
 
         mockMvc.perform(get("/api/holds/{holdId}", hold.getId())
@@ -181,8 +174,6 @@ class HoldControllerIntegrationTest {
 
         assertThat(showSeatRepository.findAllByShowId(fixture.show().getId()).get(0).getStatus())
                 .isEqualTo(ShowSeatStatus.AVAILABLE);
-        assertThat(showSectionInventoryRepository.findAllByShowId(fixture.show().getId()).get(0).getHoldQty())
-                .isZero();
     }
 
     @Test
@@ -190,7 +181,11 @@ class HoldControllerIntegrationTest {
     void hld003_deleteHold_releasesResources() throws Exception {
         UserSession session = createUserSession();
         HoldFixture fixture = createFixture();
-        String holdId = createHold(session.accessToken(), fixture.show().getId(), fixture.seat().getId(), fixture.section().getId(), 4);
+        String holdId = createHold(
+                session.accessToken(),
+                fixture.show().getId(),
+                List.of(fixture.firstSeat().getId(), fixture.secondSeat().getId())
+        );
 
         mockMvc.perform(delete("/api/holds/{holdId}", holdId)
                         .header("Authorization", bearer(session.accessToken())))
@@ -198,30 +193,28 @@ class HoldControllerIntegrationTest {
 
         Hold hold = holdRepository.findById(holdId).orElseThrow();
         assertThat(hold.getStatus()).isEqualTo(HoldStatus.CANCELED);
-        assertThat(showSeatRepository.findAllByShowId(fixture.show().getId()).get(0).getStatus())
-                .isEqualTo(ShowSeatStatus.AVAILABLE);
-        assertThat(showSectionInventoryRepository.findAllByShowId(fixture.show().getId()).get(0).getHoldQty())
-                .isZero();
+        assertThat(showSeatRepository.findAllByShowId(fixture.show().getId()))
+                .extracting(ShowSeat::getStatus)
+                .containsOnly(ShowSeatStatus.AVAILABLE);
     }
 
     private HoldFixture createFixture() {
         Event event = eventRepository.save(Event.create("Hold Test", "Hold flow", EventStatus.PUBLISHED));
         Show show = showRepository.save(Show.schedule(event, LocalDateTime.of(2026, 6, 1, 19, 0), 701L));
-        Seat seat = seatRepository.save(Seat.create("A1", 1, 1, 701L));
-        Section section = sectionRepository.save(Section.create("VIP", 701L));
+        Section section = sectionRepository.save(Section.create("A구역", 701L));
+        Seat firstSeat = seatRepository.save(Seat.create("A1", 1, 1, 701L, section));
+        Seat secondSeat = seatRepository.save(Seat.create("A2", 1, 2, 701L, section));
 
-        showSeatRepository.save(ShowSeat.createAvailable(show, seat, 150000));
-        showSectionInventoryRepository.save(ShowSectionInventory.open(show, section, 120000, 100));
+        showSeatRepository.save(ShowSeat.createAvailable(show, firstSeat, 150000));
+        showSeatRepository.save(ShowSeat.createAvailable(show, secondSeat, 150000));
 
-        return new HoldFixture(show, seat, section);
+        return new HoldFixture(show, firstSeat, secondSeat);
     }
 
     private String createHold(
             String accessToken,
             Long showId,
-            Long seatId,
-            Long sectionId,
-            int sectionQty
+            List<Long> seatIds
     ) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/holds")
                         .header("Authorization", bearer(accessToken))
@@ -229,10 +222,7 @@ class HoldControllerIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json(new CreateHoldRequest(
                                 showId,
-                                List.of(
-                                        new CreateHoldRequest.Item(seatId, null, null),
-                                        new CreateHoldRequest.Item(null, sectionId, sectionQty)
-                                )
+                                seatIds.stream().map(CreateHoldRequest.Item::new).toList()
                         ))))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -272,8 +262,8 @@ class HoldControllerIntegrationTest {
 
     private record HoldFixture(
             Show show,
-            Seat seat,
-            Section section
+            Seat firstSeat,
+            Seat secondSeat
     ) {
     }
 

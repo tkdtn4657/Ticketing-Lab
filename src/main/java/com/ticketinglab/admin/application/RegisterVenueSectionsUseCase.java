@@ -4,7 +4,6 @@ import com.ticketinglab.admin.presentation.dto.CreatedCountResponse;
 import com.ticketinglab.admin.presentation.dto.RegisterVenueSectionsRequest;
 import com.ticketinglab.venue.domain.Section;
 import com.ticketinglab.venue.domain.SectionRepository;
-import com.ticketinglab.venue.domain.SectionSaleType;
 import com.ticketinglab.venue.domain.VenueRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,7 +13,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.HashSet;
 import java.util.List;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -40,7 +38,7 @@ public class RegisterVenueSectionsUseCase {
         }
 
         List<Section> sections = request.sections().stream()
-                .map(item -> Section.create(item.name(), resolveSaleType(item.saleType()), venueId))
+                .map(item -> Section.create(item.name(), venueId))
                 .toList();
 
         sectionRepository.saveAll(sections);
@@ -50,14 +48,6 @@ public class RegisterVenueSectionsUseCase {
     private void validateDistinctNames(List<String> names) {
         if (new HashSet<>(names).size() != names.size()) {
             throw new ResponseStatusException(CONFLICT, "duplicate section names");
-        }
-    }
-
-    private SectionSaleType resolveSaleType(String rawSaleType) {
-        try {
-            return SectionSaleType.from(rawSaleType);
-        } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(BAD_REQUEST, "invalid section sale type");
         }
     }
 }

@@ -257,16 +257,6 @@
   `200 OK`
   `createdCount` 반환
 
-### FUNC-ADM-007 회차 구역 인벤토리 생성
-
-- 목적:
-  회차별 구역 재고 생성 확인
-- 요청:
-  `POST /api/admin/shows/{showId}/section-inventories`
-- 기대 결과:
-  `200 OK`
-  `createdCount` 반환
-
 ### FUNC-ADM-008 공연장 목록 조회
 
 - 목적:
@@ -353,23 +343,23 @@
 ### FUNC-VIEW-003 회차 가용성 조회
 
 - 목적:
-  좌석 / 구역 가용성 조회 확인
+  회차 좌석 가용성 조회 확인
 - 요청:
   `GET /api/shows/{showId}/availability`
 - 기대 결과:
   `200 OK`
-  좌석과 구역 정보 반환
+  좌석 목록과 좌석별 구역 정보 반환
 
 ### FUNC-HOLD-001 홀드 생성 성공
 
 - 목적:
-  좌석 / 구역 선점 확인
+  좌석 선점 확인
 - 요청:
   `POST /api/holds`
 - 기대 결과:
   `200 OK`
   `holdId`, `expiresAt` 반환
-  좌석은 `HELD`, 구역은 `hold_qty` 증가
+  요청 좌석은 `HELD` 상태로 반영
 
 ### FUNC-HOLD-002 홀드 상세 조회
 

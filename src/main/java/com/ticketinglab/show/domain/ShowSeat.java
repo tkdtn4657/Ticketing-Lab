@@ -67,8 +67,8 @@ public class ShowSeat {
         if (!isAvailable()) {
             throw new IllegalStateException("seat not available");
         }
-        if (!seat.allowsAssignedSeatHold()) {
-            throw new IllegalStateException("seat belongs to a quantity section");
+        if (!seat.hasSection()) {
+            throw new IllegalStateException("seat section required");
         }
         this.status = ShowSeatStatus.HELD;
     }

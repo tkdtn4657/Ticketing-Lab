@@ -32,9 +32,6 @@ public class HoldItem {
     @Column(name = "seat_id")
     private Long seatId;
 
-    @Column(name = "section_id")
-    private Long sectionId;
-
     @Column(name = "qty", nullable = false)
     private int qty;
 
@@ -49,23 +46,17 @@ public class HoldItem {
             Hold hold,
             HoldItemType type,
             Long seatId,
-            Long sectionId,
             int qty,
             int unitPrice
     ) {
         this.hold = hold;
         this.type = type;
         this.seatId = seatId;
-        this.sectionId = sectionId;
         this.qty = qty;
         this.unitPrice = unitPrice;
     }
 
     public static HoldItem seat(Hold hold, Long seatId, int unitPrice) {
-        return new HoldItem(hold, HoldItemType.SEAT, seatId, null, 1, unitPrice);
-    }
-
-    public static HoldItem section(Hold hold, Long sectionId, int qty, int unitPrice) {
-        return new HoldItem(hold, HoldItemType.SECTION, null, sectionId, qty, unitPrice);
+        return new HoldItem(hold, HoldItemType.SEAT, seatId, 1, unitPrice);
     }
 }

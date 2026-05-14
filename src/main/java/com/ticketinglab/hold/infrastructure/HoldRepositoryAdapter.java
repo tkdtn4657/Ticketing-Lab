@@ -50,13 +50,4 @@ public class HoldRepositoryAdapter implements HoldRepository {
     ) {
         return jpaRepository.findAllActiveExpiredByShowIdAndSeatIdIn(showId, now, seatIds);
     }
-
-    @Override
-    public List<Hold> findAllActiveExpiredByShowIdAndSectionIdIn(
-            Long showId,
-            Collection<Long> sectionIds,
-            LocalDateTime now
-    ) {
-        return jpaRepository.findAllActiveExpiredByShowIdAndSectionIdIn(showId, now, sectionIds);
-    }
 }

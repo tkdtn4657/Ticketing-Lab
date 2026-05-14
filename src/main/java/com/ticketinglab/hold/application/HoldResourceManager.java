@@ -3,8 +3,6 @@ package com.ticketinglab.hold.application;
 import com.ticketinglab.hold.domain.Hold;
 import com.ticketinglab.hold.domain.HoldItem;
 import com.ticketinglab.hold.domain.HoldRepository;
-import com.ticketinglab.show.domain.ShowSectionInventory;
-import com.ticketinglab.show.domain.ShowSectionInventoryRepository;
 import com.ticketinglab.show.domain.ShowSeat;
 import com.ticketinglab.show.domain.ShowSeatRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +24,6 @@ public class HoldResourceManager {
 
     private final HoldRepository holdRepository;
     private final ShowSeatRepository showSeatRepository;
-    private final ShowSectionInventoryRepository showSectionInventoryRepository;
 
     public int expireActiveHolds(LocalDateTime now, int limit) {
         return expireActiveHoldIds(holdRepository.findActiveExpiredIds(now, limit), now);
@@ -39,27 +36,24 @@ public class HoldResourceManager {
     public LockedResources prepareForCreate(
             Long showId,
             Collection<Long> seatIds,
-            Collection<Long> sectionIds,
             LocalDateTime now
     ) {
-        LockedResources lockedResources = lockResources(showId, seatIds, sectionIds);
-        Map<String, Hold> expiredHolds = findExpiredHolds(showId, seatIds, sectionIds, now);
+        LockedResources lockedResources = lockResources(showId, seatIds);
+        Map<String, Hold> expiredHolds = findExpiredHolds(showId, seatIds, now);
 
         if (expiredHolds.isEmpty()) {
             return lockedResources;
         }
 
         Set<Long> allSeatIds = new LinkedHashSet<>(seatIds);
-        Set<Long> allSectionIds = new LinkedHashSet<>(sectionIds);
 
         expiredHolds.values().stream()
                 .flatMap(hold -> hold.getItems().stream())
-                .forEach(item -> collectResourceIds(item, allSeatIds, allSectionIds));
+                .forEach(item -> collectResourceIds(item, allSeatIds));
 
         LockedResources releasableResources = allSeatIds.size() == seatIds.size()
-                && allSectionIds.size() == sectionIds.size()
                 ? lockedResources
-                : lockResources(showId, allSeatIds, allSectionIds);
+                : lockResources(showId, allSeatIds);
 
         expiredHolds.values().forEach(hold -> expire(hold, now, releasableResources));
         return releasableResources;
@@ -72,8 +66,7 @@ public class HoldResourceManager {
 
         LockedResources lockedResources = lockResources(
                 hold.getShowId(),
-                seatIdsOf(hold),
-                sectionIdsOf(hold)
+                seatIdsOf(hold)
         );
         expire(hold, now, lockedResources);
     }
@@ -86,8 +79,7 @@ public class HoldResourceManager {
 
         LockedResources lockedResources = lockResources(
                 hold.getShowId(),
-                seatIdsOf(hold),
-                sectionIdsOf(hold)
+                seatIdsOf(hold)
         );
 
         hold.cancel();
@@ -121,7 +113,6 @@ public class HoldResourceManager {
     private Map<String, Hold> findExpiredHolds(
             Long showId,
             Collection<Long> seatIds,
-            Collection<Long> sectionIds,
             LocalDateTime now
     ) {
         Map<String, Hold> expiredHolds = new LinkedHashMap<>();
@@ -131,39 +122,25 @@ public class HoldResourceManager {
                     .forEach(hold -> expiredHolds.put(hold.getId(), hold));
         }
 
-        if (!sectionIds.isEmpty()) {
-            holdRepository.findAllActiveExpiredByShowIdAndSectionIdIn(showId, sectionIds, now)
-                    .forEach(hold -> expiredHolds.put(hold.getId(), hold));
-        }
-
         return expiredHolds;
     }
 
     private LockedResources lockResources(
             Long showId,
-            Collection<Long> seatIds,
-            Collection<Long> sectionIds
+            Collection<Long> seatIds
     ) {
         Map<Long, ShowSeat> seatById = seatIds.isEmpty()
                 ? Map.of()
                 : showSeatRepository.findAllByShowIdAndSeatIdInForUpdate(showId, seatIds).stream()
                 .collect(Collectors.toMap(showSeat -> showSeat.getSeat().getId(), Function.identity()));
 
-        Map<Long, ShowSectionInventory> sectionById = sectionIds.isEmpty()
-                ? Map.of()
-                : showSectionInventoryRepository.findAllByShowIdAndSectionIdInForUpdate(showId, sectionIds).stream()
-                .collect(Collectors.toMap(inventory -> inventory.getSection().getId(), Function.identity()));
-
-        return new LockedResources(seatById, sectionById);
+        return new LockedResources(seatById);
     }
 
     private void releaseResources(Hold hold, LockedResources lockedResources) {
         for (HoldItem item : hold.getItems()) {
             if (item.getSeatId() != null) {
                 requiredSeat(lockedResources, item.getSeatId()).releaseHold();
-            }
-            if (item.getSectionId() != null) {
-                requiredSection(lockedResources, item.getSectionId()).releaseHold(item.getQty());
             }
         }
     }
@@ -176,14 +153,6 @@ public class HoldResourceManager {
         return showSeat;
     }
 
-    private ShowSectionInventory requiredSection(LockedResources lockedResources, Long sectionId) {
-        ShowSectionInventory inventory = lockedResources.sectionById().get(sectionId);
-        if (inventory == null) {
-            throw new IllegalStateException("show section inventory not found");
-        }
-        return inventory;
-    }
-
     private Set<Long> seatIdsOf(Hold hold) {
         return hold.getItems().stream()
                 .map(HoldItem::getSeatId)
@@ -191,25 +160,14 @@ public class HoldResourceManager {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private Set<Long> sectionIdsOf(Hold hold) {
-        return hold.getItems().stream()
-                .map(HoldItem::getSectionId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    private void collectResourceIds(HoldItem item, Set<Long> seatIds, Set<Long> sectionIds) {
+    private void collectResourceIds(HoldItem item, Set<Long> seatIds) {
         if (item.getSeatId() != null) {
             seatIds.add(item.getSeatId());
-        }
-        if (item.getSectionId() != null) {
-            sectionIds.add(item.getSectionId());
         }
     }
 
     public record LockedResources(
-            Map<Long, ShowSeat> seatById,
-            Map<Long, ShowSectionInventory> sectionById
+            Map<Long, ShowSeat> seatById
     ) {
     }
 }

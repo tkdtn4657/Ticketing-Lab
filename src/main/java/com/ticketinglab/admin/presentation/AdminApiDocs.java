@@ -7,7 +7,6 @@ import com.ticketinglab.admin.presentation.dto.CreateEventRequest;
 import com.ticketinglab.admin.presentation.dto.CreateEventResponse;
 import com.ticketinglab.admin.presentation.dto.CreateShowRequest;
 import com.ticketinglab.admin.presentation.dto.CreateShowResponse;
-import com.ticketinglab.admin.presentation.dto.CreateShowSectionInventoriesRequest;
 import com.ticketinglab.admin.presentation.dto.CreateShowSeatsRequest;
 import com.ticketinglab.admin.presentation.dto.CreatedCountResponse;
 import com.ticketinglab.admin.presentation.dto.RegisterVenueSectionsRequest;
@@ -307,37 +306,5 @@ public interface AdminApiDocs {
             @Parameter(description = "회차 ID", example = "200")
             Long showId,
             @Valid CreateShowSeatsRequest request
-    );
-
-    @Operation(summary = "회차 구역 재고 생성", description = "ADM-007. 회차별 구역 가격과 수량 정보를 일괄 생성합니다.")
-    @RequestBody(
-            required = true,
-            description = "회차 구역 재고 생성 요청",
-            content = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(implementation = CreateShowSectionInventoriesRequest.class),
-                    examples = @ExampleObject(value = OpenApiExamples.ADMIN_CREATE_SECTION_INVENTORIES_REQUEST)
-            )
-    )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "회차 구역 재고 생성 성공",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CreatedCountResponse.class),
-                            examples = @ExampleObject(value = OpenApiExamples.ADMIN_CREATED_COUNT_RESPONSE)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "구역 요청 형식이 올바르지 않거나 sectionId가 잘못되었습니다."),
-            @ApiResponse(responseCode = "401", description = "Bearer 토큰이 필요합니다."),
-            @ApiResponse(responseCode = "403", description = "ADMIN 권한이 필요합니다."),
-            @ApiResponse(responseCode = "404", description = "회차를 찾을 수 없습니다."),
-            @ApiResponse(responseCode = "409", description = "중복 sectionId가 있거나 이미 생성된 회차 구역 재고입니다.")
-    })
-    ResponseEntity<CreatedCountResponse> createShowSectionInventories(
-            @Parameter(description = "회차 ID", example = "200")
-            Long showId,
-            @Valid CreateShowSectionInventoriesRequest request
     );
 }

@@ -48,8 +48,7 @@ public class CreateReservationUseCase {
         try {
             ReservationResourceManager.LockedResources lockedResources = reservationResourceManager.lockResources(
                     hold.getShowId(),
-                    seatIdsOf(hold),
-                    sectionIdsOf(hold)
+                    seatIdsOf(hold)
             );
 
             reserveSeats(hold, lockedResources);
@@ -84,10 +83,4 @@ public class CreateReservationUseCase {
                 .collect(Collectors.toSet());
     }
 
-    private Set<Long> sectionIdsOf(Hold hold) {
-        return hold.getItems().stream()
-                .map(HoldItem::getSectionId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-    }
 }

@@ -67,8 +67,8 @@ public class Seat {
                 .build();
     }
 
-    public boolean allowsAssignedSeatHold() {
-        return section == null || section.isAssignedSeatType();
+    public boolean hasSection() {
+        return section != null;
     }
 
     @Builder

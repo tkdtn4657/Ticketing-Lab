@@ -79,10 +79,6 @@ public class Hold {
         items.add(HoldItem.seat(this, seatId, unitPrice));
     }
 
-    public void addSectionItem(Long sectionId, int quantity, int unitPrice) {
-        items.add(HoldItem.section(this, sectionId, quantity, unitPrice));
-    }
-
     public boolean isOwnedBy(Long userId) {
         return this.userId.equals(userId);
     }

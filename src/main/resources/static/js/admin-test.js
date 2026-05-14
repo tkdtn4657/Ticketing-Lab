@@ -19,10 +19,6 @@ const defaultShowSeatItems = JSON.stringify([
     { seatId: 1, price: 150000 }
 ], null, 2);
 
-const defaultSectionInventoryItems = JSON.stringify([
-    { sectionId: 1, price: 120000, capacity: 100 }
-], null, 2);
-
 const state = {
     accessToken: "",
     venueId: null,
@@ -57,9 +53,7 @@ const dom = {
     createShowButton: document.getElementById("create-show-button"),
     inventoryShowIdInput: document.getElementById("inventory-show-id-input"),
     showSeatItemsInput: document.getElementById("show-seat-items-input"),
-    sectionInventoryItemsInput: document.getElementById("section-inventory-items-input"),
     createShowSeatsButton: document.getElementById("create-show-seats-button"),
-    createSectionInventoriesButton: document.getElementById("create-section-inventories-button"),
     openAvailabilityButton: document.getElementById("open-availability-button"),
     openHoldsButton: document.getElementById("open-holds-button"),
     openReservationsButton: document.getElementById("open-reservations-button"),
@@ -256,18 +250,6 @@ function seedInventoryPayloads() {
         );
     }
 
-    const canOverwriteSections = !dom.sectionInventoryItemsInput.value.trim() || dom.sectionInventoryItemsInput.value.trim() === defaultSectionInventoryItems;
-    if (canOverwriteSections && state.sections.length) {
-        dom.sectionInventoryItemsInput.value = JSON.stringify(
-            state.sections.slice(0, 3).map((section) => ({
-                sectionId: section.sectionId,
-                price: 120000,
-                capacity: 100
-            })),
-            null,
-            2
-        );
-    }
 }
 
 function renderEmptyList(target, title, description) {
@@ -359,7 +341,6 @@ function resetState() {
     dom.inventoryShowIdInput.value = "";
     dom.checkinQrTokenInput.value = "";
     dom.showSeatItemsInput.value = defaultShowSeatItems;
-    dom.sectionInventoryItemsInput.value = defaultSectionInventoryItems;
 
     renderLog("Ready", "No request yet", {
         ready: true,
@@ -555,29 +536,6 @@ dom.createShowSeatsButton.addEventListener("click", async () => {
     }
 });
 
-dom.createSectionInventoriesButton.addEventListener("click", async () => {
-    const showId = readPositiveNumber(dom.inventoryShowIdInput, "Show ID");
-    if (!showId) {
-        return;
-    }
-
-    const items = parseJsonInput(dom.sectionInventoryItemsInput.value, "Section Inventories JSON");
-    if (!Array.isArray(items)) {
-        return;
-    }
-
-    const result = await callApi({
-        title: "ADM-007 Create Section Inventories",
-        endpoint: buildEndpoint(`/api/admin/shows/${showId}/section-inventories`),
-        method: "POST",
-        body: { items }
-    });
-
-    if (result?.ok) {
-        setState({ showId });
-    }
-});
-
 dom.openAvailabilityButton.addEventListener("click", () => {
     const showId = readPositiveNumber(dom.inventoryShowIdInput, "Show ID");
     if (!showId) {
@@ -649,7 +607,6 @@ dom.clearLogButton.addEventListener("click", () => {
     dom.seatItemsInput.value = defaultSeatItems;
     dom.sectionItemsInput.value = defaultSectionItems;
     dom.showSeatItemsInput.value = defaultShowSeatItems;
-    dom.sectionInventoryItemsInput.value = defaultSectionInventoryItems;
     dom.showStartAtInput.value = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
     dom.checkinEndpointPreview.value = buildEndpoint("/api/checkin").replace(API_BASE, "");
 

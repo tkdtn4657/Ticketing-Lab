@@ -127,7 +127,7 @@
                         <li>같은 <code>Idempotency-Key</code>로 같은 요청을 다시 보내면 동일한 payment 응답이 재사용됩니다.</li>
                         <li><code>amount</code>가 reservation 총액과 다르면 <code>409 Conflict</code>가 내려옵니다.</li>
                         <li>성공 시 reservation은 <code>PAID</code>, 결제는 <code>APPROVED</code>가 됩니다.</li>
-                        <li>구역형 item은 <code>qty</code>만큼 개별 ticket이 생성되고, <code>holdQty -&gt; soldQty</code>로 이동합니다.</li>
+                        <li>예약 item은 seat 기준으로 개별 ticket이 생성됩니다.</li>
                     </ul>
                 </div>
             </section>
@@ -138,7 +138,7 @@
                         <p class="eyebrow">STEP 2</p>
                         <h2>내 티켓 목록</h2>
                     </div>
-                    <p class="section-copy">결제 후 발급된 티켓을 페이지 단위로 조회합니다. 좌석형과 구역형 티켓이 같은 목록에 개별 row로 표시됩니다.</p>
+                    <p class="section-copy">결제 후 발급된 좌석 티켓을 페이지 단위로 조회합니다. 각 예약 좌석이 개별 row로 표시됩니다.</p>
                 </div>
 
                 <div class="form-grid two-col">

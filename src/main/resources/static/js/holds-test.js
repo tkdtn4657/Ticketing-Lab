@@ -5,7 +5,7 @@ const API_BASE = window.location.port === "9090" || window.location.port === ""
 const STORAGE_KEY = "ticketinglab.holds.console.state";
 const defaultHoldItems = JSON.stringify([
     { seatId: 1 },
-    { sectionId: 1, qty: 2 }
+    { seatId: 2 }
 ], null, 2);
 
 const state = {
@@ -374,7 +374,7 @@ function renderEmptyHoldItems() {
     dom.holdItemListView.innerHTML = `
         <article class="empty-panel">
             <strong>아직 조회된 홀드가 없습니다.</strong>
-            <p class="placeholder-copy">홀드를 생성하거나 holdId로 조회하면 이 영역에 seat/section item과 단가 정보가 표시됩니다.</p>
+            <p class="placeholder-copy">홀드를 생성하거나 holdId로 조회하면 이 영역에 seat item과 단가 정보가 표시됩니다.</p>
         </article>
     `;
 }
@@ -386,21 +386,18 @@ function renderHoldItems() {
     }
 
     dom.holdItemListView.innerHTML = state.items.map((item) => {
-        const isSeat = item.type === "SEAT";
-        const targetId = isSeat ? item.seatId : item.sectionId;
         return `
-            <article class="inventory-card hold-item-card ${isSeat ? "seat-card" : "section-card"}">
+            <article class="inventory-card hold-item-card seat-card">
                 <div class="inventory-head">
                     <div>
                         <h3>${escapeHtml(item.type)}</h3>
-                        <p class="muted">${isSeat ? "seatId" : "sectionId"} ${escapeHtml(targetId)}</p>
+                        <p class="muted">seatId ${escapeHtml(item.seatId)}</p>
                     </div>
-                    <span class="status-token ${isSeat ? "available" : "section-remaining"}">${escapeHtml(item.type)}</span>
+                    <span class="status-token available">${escapeHtml(item.type)}</span>
                 </div>
                 <div class="token-row">
-                    <span class="token">qty ${escapeHtml(item.qty)}</span>
                     <span class="token">unitPrice ${escapeHtml(item.unitPrice)}</span>
-                    ${isSeat ? `<span class="token">seatId ${escapeHtml(item.seatId)}</span>` : `<span class="token">sectionId ${escapeHtml(item.sectionId)}</span>`}
+                    <span class="token">seatId ${escapeHtml(item.seatId)}</span>
                 </div>
             </article>
         `;
@@ -443,33 +440,14 @@ function renderSeatList() {
 function renderEmptySectionList() {
     dom.sectionListView.innerHTML = `
         <article class="empty-panel">
-            <strong>불러온 구역 정보가 없습니다.</strong>
-            <p class="placeholder-copy">가용성 조회를 실행하면 이 영역에 구역별 remainingQty가 표시됩니다.</p>
+            <strong>별도 sections 응답은 사용하지 않습니다.</strong>
+            <p class="placeholder-copy">현재 가용성 API는 seats 배열만 반환하며, 구역은 각 seat의 sectionName으로 확인합니다.</p>
         </article>
     `;
 }
 
 function renderSectionList() {
-    if (!state.sections.length) {
-        renderEmptySectionList();
-        return;
-    }
-
-    dom.sectionListView.innerHTML = state.sections.map((section) => `
-        <article class="inventory-card section-card">
-            <div class="inventory-head">
-                <div>
-                    <h3>${escapeHtml(section.name || `Section #${section.sectionId}`)}</h3>
-                    <p class="muted">sectionId ${escapeHtml(section.sectionId)}</p>
-                </div>
-                <span class="status-token section-remaining">remaining ${escapeHtml(section.remainingQty)}</span>
-            </div>
-            <div class="meta-row">
-                <span class="token">price ${escapeHtml(section.price)}</span>
-                <span class="token">remainingQty ${escapeHtml(section.remainingQty)}</span>
-            </div>
-        </article>
-    `).join("");
+    renderEmptySectionList();
 }
 
 function syncView() {
@@ -511,7 +489,7 @@ async function fetchAvailability(showId, { silent = false } = {}) {
         setState({
             selectedShowId: showId,
             seats: Array.isArray(result.body.seats) ? result.body.seats : [],
-            sections: Array.isArray(result.body.sections) ? result.body.sections : []
+            sections: []
         });
     } else if (result) {
         setState({

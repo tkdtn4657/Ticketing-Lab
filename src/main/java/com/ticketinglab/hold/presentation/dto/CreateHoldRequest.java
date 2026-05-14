@@ -12,9 +12,7 @@ public record CreateHoldRequest(
         @NotEmpty List<@Valid Item> items
 ) {
     public record Item(
-            @Positive Long seatId,
-            @Positive Long sectionId,
-            @Positive Integer qty
+            @NotNull @Positive Long seatId
     ) {
     }
 }

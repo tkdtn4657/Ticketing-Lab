@@ -9,8 +9,6 @@ import com.ticketinglab.hold.domain.Hold;
 import com.ticketinglab.hold.domain.HoldRepository;
 import com.ticketinglab.reservation.domain.Reservation;
 import com.ticketinglab.reservation.domain.ReservationRepository;
-import com.ticketinglab.show.domain.ShowSectionInventory;
-import com.ticketinglab.show.domain.ShowSectionInventoryRepository;
 import com.ticketinglab.show.domain.ShowSeat;
 import com.ticketinglab.show.domain.ShowSeatRepository;
 import com.ticketinglab.show.domain.ShowSeatStatus;
@@ -57,17 +55,14 @@ class ShowControllerIntegrationTest {
     private ShowSeatRepository showSeatRepository;
 
     @Autowired
-    private ShowSectionInventoryRepository showSectionInventoryRepository;
-
-    @Autowired
     private HoldRepository holdRepository;
 
     @Autowired
     private ReservationRepository reservationRepository;
 
     @Test
-    @DisplayName("SHW-001 GET /api/shows/{showId}/availability returns seats and sections")
-    void shw001_availability_returnsSeatsAndSections() throws Exception {
+    @DisplayName("SHW-001 GET /api/shows/{showId}/availability returns section seats")
+    void shw001_availability_returnsSectionSeats() throws Exception {
         Event event = eventRepository.save(
                 Event.create("Grand Concert", "Availability test show", EventStatus.PUBLISHED)
         );
@@ -75,15 +70,12 @@ class ShowControllerIntegrationTest {
                 Show.schedule(event, LocalDateTime.of(2026, 4, 5, 19, 0), 301L)
         );
 
-        Seat secondSeat = seatRepository.save(Seat.create("A2", 1, 2, 301L));
-        Seat firstSeat = seatRepository.save(Seat.create("A1", 1, 1, 301L));
-        Section section = sectionRepository.save(Section.create("R", 301L));
+        Section section = sectionRepository.save(Section.create("A구역", 301L));
+        Seat secondSeat = seatRepository.save(Seat.create("A2", 1, 2, 301L, section));
+        Seat firstSeat = seatRepository.save(Seat.create("A1", 1, 1, 301L, section));
 
         showSeatRepository.save(ShowSeat.create(show, secondSeat, 150000, ShowSeatStatus.SOLD));
         showSeatRepository.save(ShowSeat.create(show, firstSeat, 150000, ShowSeatStatus.AVAILABLE));
-        showSectionInventoryRepository.save(
-                ShowSectionInventory.create(show, section, 120000, 100, 20, 5)
-        );
 
         mockMvc.perform(get("/api/shows/{showId}/availability", show.getId())
                         .accept(MediaType.APPLICATION_JSON))
@@ -93,15 +85,12 @@ class ShowControllerIntegrationTest {
                 .andExpect(jsonPath("$.seats[0].label").value("A1"))
                 .andExpect(jsonPath("$.seats[0].rowNo").value(1))
                 .andExpect(jsonPath("$.seats[0].colNo").value(1))
+                .andExpect(jsonPath("$.seats[0].sectionId").value(section.getId()))
+                .andExpect(jsonPath("$.seats[0].sectionName").value("A구역"))
                 .andExpect(jsonPath("$.seats[0].price").value(150000))
                 .andExpect(jsonPath("$.seats[0].available").value(true))
                 .andExpect(jsonPath("$.seats[1].seatId").value(secondSeat.getId()))
-                .andExpect(jsonPath("$.seats[1].available").value(false))
-                .andExpect(jsonPath("$.sections.length()").value(1))
-                .andExpect(jsonPath("$.sections[0].sectionId").value(section.getId()))
-                .andExpect(jsonPath("$.sections[0].name").value("R"))
-                .andExpect(jsonPath("$.sections[0].price").value(120000))
-                .andExpect(jsonPath("$.sections[0].remainingQty").value(75));
+                .andExpect(jsonPath("$.seats[1].available").value(false));
     }
 
     @Test
@@ -114,8 +103,9 @@ class ShowControllerIntegrationTest {
                 Show.schedule(event, LocalDateTime.of(2026, 4, 6, 19, 0), 302L)
         );
 
-        Seat heldSeat = seatRepository.save(Seat.create("A1", 1, 1, 302L));
-        Seat reservedSeat = seatRepository.save(Seat.create("A2", 1, 2, 302L));
+        Section section = sectionRepository.save(Section.create("A구역", 302L));
+        Seat heldSeat = seatRepository.save(Seat.create("A1", 1, 1, 302L, section));
+        Seat reservedSeat = seatRepository.save(Seat.create("A2", 1, 2, 302L, section));
         showSeatRepository.save(ShowSeat.create(show, heldSeat, 150000, ShowSeatStatus.HELD));
         showSeatRepository.save(ShowSeat.create(show, reservedSeat, 150000, ShowSeatStatus.RESERVED));
 

@@ -13,17 +13,17 @@
             <p class="eyebrow">SHOWS API</p>
             <h1>회차 가용성 API 테스트 콘솔</h1>
             <p class="hero-text">
-                <code>SHW-001</code> 응답에서 좌석 <code>seats[]</code>와 구역 <code>sections[]</code>가 어떻게 내려오는지 바로 검증할 수 있는 테스트 페이지입니다.
-                <code>showId</code>를 입력하거나, 이벤트 테스트 페이지에서 이동해 현재 회차의 좌석 가용 여부와 구역 잔여 수량을 한 번에 확인해 보세요.
+                <code>SHW-001</code> 응답에서 좌석 <code>seats[]</code>가 어떻게 내려오는지 바로 검증할 수 있는 테스트 페이지입니다.
+                <code>showId</code>를 입력하거나, 이벤트 테스트 페이지에서 이동해 현재 회차의 좌석 가용 여부를 확인해 보세요.
             </p>
         </div>
         <div class="hero-panel">
             <p class="hero-panel-label">권장 확인 순서</p>
             <ol>
                 <li><strong>Show ID</strong>를 입력하거나 <code>?showId=1</code> 형식으로 페이지를 엽니다.</li>
-                <li><strong>SHW-001</strong> 요청으로 좌석 목록과 구역 목록을 불러옵니다.</li>
+                <li><strong>SHW-001</strong> 요청으로 좌석 목록을 불러옵니다.</li>
                 <li><code>available=true|false</code> 값이 좌석 상태와 맞는지 확인합니다.</li>
-                <li><code>remainingQty = capacity - soldQty - holdQty</code> 계산이 기대값과 맞는지 확인합니다.</li>
+                <li><code>sectionId</code>, <code>sectionName</code> 값으로 좌석이 어느 구역에 속하는지 확인합니다.</li>
             </ol>
         </div>
     </header>
@@ -40,9 +40,9 @@
             <span>seatId, label, rowNo, colNo, price, available</span>
         </article>
         <article class="flow-item">
-            <p>SECTIONS</p>
-            <h2>구역 잔여 수량</h2>
-            <span>sectionId, name, price, remainingQty</span>
+            <p>SECTION MAP</p>
+            <h2>좌석 구역</h2>
+            <span>sectionId, sectionName</span>
         </article>
     </section>
 
@@ -54,7 +54,7 @@
                         <p class="eyebrow">STEP 1</p>
                         <h2>회차 가용성 조회</h2>
                     </div>
-                    <p class="section-copy">회차 ID 하나로 좌석과 구역 가용 정보를 함께 조회합니다. 공개 조회 API라 토큰 없이 바로 테스트할 수 있습니다.</p>
+                    <p class="section-copy">회차 ID 하나로 좌석별 가용 정보를 조회합니다. 공개 조회 API라 토큰 없이 바로 테스트할 수 있습니다.</p>
                 </div>
 
                 <form id="availability-form" class="form-grid">
@@ -84,9 +84,9 @@
                         <small>응답 순서는 rowNo, colNo, seatId 기준으로 정렬됩니다.</small>
                     </article>
                     <article>
-                        <p class="expect-label">구역 응답</p>
-                        <p><code>sections[].remainingQty</code> 로 잔여 수량을 확인합니다.</p>
-                        <small>구역은 name, sectionId 순으로 정렬됩니다.</small>
+                        <p class="expect-label">구역 정보</p>
+                        <p><code>seats[].sectionName</code> 으로 각 좌석의 구역을 확인합니다.</p>
+                        <small>구역별 잔여 수는 seats 배열에서 available 좌석을 집계합니다.</small>
                     </article>
                 </div>
 
@@ -95,8 +95,8 @@
                     <ul>
                         <li>존재하지 않는 <code>showId</code>를 조회하면 <code>404 Not Found</code>가 내려옵니다.</li>
                         <li>쿼리 파라미터가 없으면 로컬 샘플 회차를 자동으로 찾아 먼저 조회합니다.</li>
-                        <li>좌석 인벤토리나 구역 인벤토리가 없으면 각각 빈 배열로 응답합니다.</li>
-                        <li>이 페이지는 좌석/구역의 현재 조회 상태를 보여주며, 상태 변경은 수행하지 않습니다.</li>
+                        <li>좌석 인벤토리가 없으면 빈 배열로 응답합니다.</li>
+                        <li>이 페이지는 좌석의 현재 조회 상태를 보여주며, 상태 변경은 수행하지 않습니다.</li>
                     </ul>
                 </div>
             </section>
@@ -115,10 +115,10 @@
             <section class="card board-card">
                 <div class="section-head compact-head">
                     <div>
-                        <p class="eyebrow">SECTIONS</p>
-                        <h2>구역 잔여 현황</h2>
+                        <p class="eyebrow">SECTION MAP</p>
+                        <h2>좌석 구역 현황</h2>
                     </div>
-                    <span id="sections-summary-badge" class="status idle">No Sections Loaded</span>
+                    <span id="sections-summary-badge" class="status idle">No Seat Sections</span>
                 </div>
                 <div id="section-list-view" class="inventory-grid"></div>
             </section>
@@ -165,7 +165,7 @@
                         <strong id="state-section-count">0</strong>
                     </article>
                     <article class="wide">
-                        <span class="field-label">Total Remaining Qty</span>
+                        <span class="field-label">Available Seats</span>
                         <strong id="state-total-remaining">0</strong>
                     </article>
                 </div>

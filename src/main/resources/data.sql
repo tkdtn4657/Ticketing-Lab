@@ -29,20 +29,9 @@ CREATE TABLE `hold_items` (
                               `id`	BIGINT	NOT NULL,
                               `type`	VARCHAR(20)	NOT NULL,
                               `seat_id`	BIGINT	NULL,
-                              `section_id`	BIGINT	NULL,
                               `qty`	INT	NOT NULL,
                               `unit_price`	INT	NOT NULL,
                               `hold_id`	CHAR(36)	NOT NULL
-);
-
-CREATE TABLE `show_section_inventories` (
-                                            `show_id`	BIGINT	NOT NULL,
-                                            `section_id`	BIGINT	NOT NULL,
-                                            `price`	INT	NOT NULL,
-                                            `capacity`	INT	NOT NULL,
-                                            `sold_qty`	INT	NOT NULL,
-                                            `hold_qty`	INT	NOT NULL,
-                                            `version`	INT	NOT NULL
 );
 
 CREATE TABLE `sections` (
@@ -66,7 +55,8 @@ CREATE TABLE `seats` (
                          `row_no`	INT	NULL,
                          `col_no`	INT	NULL,
                          `created_at`	DATETIME	NOT NULL,
-                         `venue_id`	BIGINT	NOT NULL
+                         `venue_id`	BIGINT	NOT NULL,
+                         `section_id`	BIGINT	NULL
 );
 
 CREATE TABLE `holds` (
@@ -82,7 +72,6 @@ CREATE TABLE `reservation_items` (
                                      `id`	BIGINT	NOT NULL,
                                      `type`	VARCHAR(20)	NOT NULL,
                                      `seat_id`	BIGINT	NULL,
-                                     `section_id`	BIGINT	NULL,
                                      `qty`	INT	NOT NULL,
                                      `unit_price`	INT	NOT NULL,
                                      `reservation_id`	CHAR(36)	NOT NULL
@@ -141,11 +130,6 @@ ALTER TABLE `reservations` ADD CONSTRAINT `PK_RESERVATIONS` PRIMARY KEY (
 
 ALTER TABLE `hold_items` ADD CONSTRAINT `PK_HOLD_ITEMS` PRIMARY KEY (
                                                                      `id`
-    );
-
-ALTER TABLE `show_section_inventories` ADD CONSTRAINT `PK_SHOW_SECTION_INVENTORIES` PRIMARY KEY (
-                                                                                                 `show_id`,
-                                                                                                 `section_id`
     );
 
 ALTER TABLE `sections` ADD CONSTRAINT `PK_SECTIONS` PRIMARY KEY (

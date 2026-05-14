@@ -8,7 +8,6 @@ import com.ticketinglab.reservation.application.ReservationResourceManager;
 import com.ticketinglab.reservation.domain.Reservation;
 import com.ticketinglab.reservation.domain.ReservationItem;
 import com.ticketinglab.reservation.domain.ReservationRepository;
-import com.ticketinglab.show.domain.ShowSectionInventory;
 import com.ticketinglab.ticket.domain.Ticket;
 import com.ticketinglab.ticket.domain.TicketRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -67,11 +65,10 @@ public class ConfirmPaymentUseCase {
 
         ReservationResourceManager.LockedResources lockedResources = reservationResourceManager.lockResources(
                 reservation.getShowId(),
-                seatIdsOf(reservation),
-                sectionIdsOf(reservation)
+                seatIdsOf(reservation)
         );
 
-        confirmSectionSales(reservation, lockedResources);
+        validateLockedSeats(reservation, lockedResources);
         reservation.confirmPayment();
 
         Payment savedPayment = paymentRepository.save(
@@ -104,37 +101,21 @@ public class ConfirmPaymentUseCase {
         }
     }
 
-    private void confirmSectionSales(
+    private void validateLockedSeats(
             Reservation reservation,
             ReservationResourceManager.LockedResources lockedResources
     ) {
         for (ReservationItem item : reservation.getItems()) {
-            if (item.getSectionId() == null) {
-                continue;
+            if (!lockedResources.seatById().containsKey(item.getSeatId())) {
+                throw new IllegalStateException("show seat not found");
             }
-            requiredSection(lockedResources, item.getSectionId()).confirmSale(item.getQty());
         }
-    }
-
-    private ShowSectionInventory requiredSection(
-            ReservationResourceManager.LockedResources lockedResources,
-            Long sectionId
-    ) {
-        ShowSectionInventory inventory = lockedResources.sectionById().get(sectionId);
-        if (inventory == null) {
-            throw new IllegalStateException("show section inventory not found");
-        }
-        return inventory;
     }
 
     private List<Ticket> issueTickets(Reservation reservation) {
-        List<Ticket> tickets = new ArrayList<>();
-        for (ReservationItem item : reservation.getItems()) {
-            for (int count = 0; count < item.getQty(); count++) {
-                tickets.add(Ticket.issue(item));
-            }
-        }
-        return tickets;
+        return reservation.getItems().stream()
+                .map(Ticket::issue)
+                .toList();
     }
 
     private Set<Long> seatIdsOf(Reservation reservation) {
@@ -144,10 +125,4 @@ public class ConfirmPaymentUseCase {
                 .collect(Collectors.toSet());
     }
 
-    private Set<Long> sectionIdsOf(Reservation reservation) {
-        return reservation.getItems().stream()
-                .map(ReservationItem::getSectionId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-    }
 }

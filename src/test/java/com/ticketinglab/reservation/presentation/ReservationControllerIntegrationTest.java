@@ -19,8 +19,6 @@ import com.ticketinglab.reservation.domain.Reservation;
 import com.ticketinglab.reservation.domain.ReservationRepository;
 import com.ticketinglab.reservation.domain.ReservationStatus;
 import com.ticketinglab.reservation.presentation.dto.CreateReservationRequest;
-import com.ticketinglab.show.domain.ShowSectionInventory;
-import com.ticketinglab.show.domain.ShowSectionInventoryRepository;
 import com.ticketinglab.show.domain.ShowSeat;
 import com.ticketinglab.show.domain.ShowSeatRepository;
 import com.ticketinglab.show.domain.ShowSeatStatus;
@@ -80,9 +78,6 @@ class ReservationControllerIntegrationTest {
     private ShowSeatRepository showSeatRepository;
 
     @Autowired
-    private ShowSectionInventoryRepository showSectionInventoryRepository;
-
-    @Autowired
     private HoldRepository holdRepository;
 
     @Autowired
@@ -109,16 +104,14 @@ class ReservationControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("RES-001 POST /api/reservations converts a hold into reservation")
+    @DisplayName("RES-001 POST /api/reservations converts a seat hold into reservation")
     void res001_createReservation_convertsHold() throws Exception {
         UserSession session = createUserSession();
         ReservationFixture fixture = createFixture();
         String holdId = createHold(
                 session.accessToken(),
                 fixture.show().getId(),
-                fixture.firstSeat().getId(),
-                fixture.firstSection().getId(),
-                3
+                List.of(fixture.firstSeat().getId(), fixture.secondSeat().getId())
         );
 
         MvcResult result = mockMvc.perform(post("/api/reservations")
@@ -134,34 +127,23 @@ class ReservationControllerIntegrationTest {
         String reservationId = body(result).get("reservationId").asText();
         Hold hold = holdRepository.findById(holdId).orElseThrow();
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow();
-        ShowSeat showSeat = showSeatRepository.findAllByShowIdAndSeatIdIn(
-                fixture.show().getId(),
-                List.of(fixture.firstSeat().getId())
-        ).get(0);
-        ShowSectionInventory inventory = showSectionInventoryRepository.findAllByShowIdAndSectionIdIn(
-                fixture.show().getId(),
-                List.of(fixture.firstSection().getId())
-        ).get(0);
 
         assertThat(hold.getStatus()).isEqualTo(HoldStatus.CONVERTED);
         assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.PENDING_PAYMENT);
         assertThat(reservation.getItems()).hasSize(2);
-        assertThat(reservation.getTotalAmount()).isEqualTo(150000 + (3 * 120000));
-        assertThat(showSeat.getStatus()).isEqualTo(ShowSeatStatus.RESERVED);
-        assertThat(inventory.getHoldQty()).isEqualTo(3);
+        assertThat(reservation.getTotalAmount()).isEqualTo(290000);
+        assertThat(showSeatStatuses(fixture)).containsOnly(ShowSeatStatus.RESERVED);
     }
 
     @Test
-    @DisplayName("RES-004 DELETE /api/reservations/{reservationId} cancels pending reservation and releases resources")
-    void res004_cancelReservation_releasesResources() throws Exception {
+    @DisplayName("RES-004 DELETE /api/reservations/{reservationId} cancels pending reservation and releases seats")
+    void res004_cancelReservation_releasesSeats() throws Exception {
         UserSession session = createUserSession();
         ReservationFixture fixture = createFixture();
         String holdId = createHold(
                 session.accessToken(),
                 fixture.show().getId(),
-                fixture.firstSeat().getId(),
-                fixture.firstSection().getId(),
-                2
+                List.of(fixture.firstSeat().getId(), fixture.secondSeat().getId())
         );
         String reservationId = createReservation(session.accessToken(), holdId);
 
@@ -170,31 +152,20 @@ class ReservationControllerIntegrationTest {
                 .andExpect(status().isNoContent());
 
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow();
-        ShowSeat releasedSeat = showSeatRepository.findAllByShowIdAndSeatIdIn(
-                fixture.show().getId(),
-                List.of(fixture.firstSeat().getId())
-        ).get(0);
-        ShowSectionInventory releasedInventory = showSectionInventoryRepository.findAllByShowIdAndSectionIdIn(
-                fixture.show().getId(),
-                List.of(fixture.firstSection().getId())
-        ).get(0);
 
         assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELED);
-        assertThat(releasedSeat.getStatus()).isEqualTo(ShowSeatStatus.AVAILABLE);
-        assertThat(releasedInventory.getHoldQty()).isZero();
+        assertThat(showSeatStatuses(fixture)).containsOnly(ShowSeatStatus.AVAILABLE);
     }
 
     @Test
-    @DisplayName("RES-002 GET /api/reservations/{reservationId} returns reservation detail")
+    @DisplayName("RES-002 GET /api/reservations/{reservationId} returns seat reservation detail")
     void res002_getReservation_returnsDetail() throws Exception {
         UserSession session = createUserSession();
         ReservationFixture fixture = createFixture();
         String holdId = createHold(
                 session.accessToken(),
                 fixture.show().getId(),
-                fixture.firstSeat().getId(),
-                fixture.firstSection().getId(),
-                2
+                List.of(fixture.firstSeat().getId(), fixture.secondSeat().getId())
         );
         String reservationId = createReservation(session.accessToken(), holdId);
 
@@ -205,13 +176,12 @@ class ReservationControllerIntegrationTest {
                 .andExpect(jsonPath("$.reservation.reservationId").value(reservationId))
                 .andExpect(jsonPath("$.reservation.showId").value(fixture.show().getId()))
                 .andExpect(jsonPath("$.reservation.status").value("PENDING_PAYMENT"))
-                .andExpect(jsonPath("$.reservation.totalAmount").value(390000))
+                .andExpect(jsonPath("$.reservation.totalAmount").value(290000))
                 .andExpect(jsonPath("$.items.length()").value(2))
                 .andExpect(jsonPath("$.items[0].type").value("SEAT"))
                 .andExpect(jsonPath("$.items[0].seatId").value(fixture.firstSeat().getId()))
-                .andExpect(jsonPath("$.items[1].type").value("SECTION"))
-                .andExpect(jsonPath("$.items[1].sectionId").value(fixture.firstSection().getId()))
-                .andExpect(jsonPath("$.items[1].qty").value(2));
+                .andExpect(jsonPath("$.items[1].type").value("SEAT"))
+                .andExpect(jsonPath("$.items[1].seatId").value(fixture.secondSeat().getId()));
     }
 
     @Test
@@ -223,18 +193,14 @@ class ReservationControllerIntegrationTest {
         String activeHoldId = createHold(
                 session.accessToken(),
                 fixture.show().getId(),
-                fixture.firstSeat().getId(),
-                fixture.firstSection().getId(),
-                2
+                List.of(fixture.firstSeat().getId())
         );
         createReservation(session.accessToken(), activeHoldId);
 
         String expiredReservationId = createExpiredReservation(
                 session.userId(),
                 fixture.show(),
-                fixture.secondSeat(),
-                fixture.secondSection(),
-                1
+                fixture.secondSeat()
         );
 
         mockMvc.perform(get("/api/me/reservations")
@@ -257,18 +223,13 @@ class ReservationControllerIntegrationTest {
                 fixture.show().getId(),
                 List.of(fixture.secondSeat().getId())
         ).get(0);
-        ShowSectionInventory releasedInventory = showSectionInventoryRepository.findAllByShowIdAndSectionIdIn(
-                fixture.show().getId(),
-                List.of(fixture.secondSection().getId())
-        ).get(0);
 
         assertThat(expiredReservation.getStatus()).isEqualTo(ReservationStatus.EXPIRED);
         assertThat(releasedSeat.getStatus()).isEqualTo(ShowSeatStatus.AVAILABLE);
-        assertThat(releasedInventory.getHoldQty()).isZero();
     }
 
     @Test
-    @DisplayName("expired reservation resources are released when creating a new hold")
+    @DisplayName("expired reservation seat is released when creating a new hold")
     void expiredReservation_releasedOnCreateHold() throws Exception {
         UserSession reservationOwner = createUserSession();
         UserSession newHolder = createUserSession();
@@ -277,9 +238,7 @@ class ReservationControllerIntegrationTest {
         createExpiredReservation(
                 reservationOwner.userId(),
                 fixture.show(),
-                fixture.firstSeat(),
-                fixture.firstSection(),
-                2
+                fixture.firstSeat()
         );
 
         mockMvc.perform(post("/api/holds")
@@ -288,10 +247,7 @@ class ReservationControllerIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json(new CreateHoldRequest(
                                 fixture.show().getId(),
-                                List.of(
-                                        new CreateHoldRequest.Item(fixture.firstSeat().getId(), null, null),
-                                        new CreateHoldRequest.Item(null, fixture.firstSection().getId(), 2)
-                                )
+                                List.of(new CreateHoldRequest.Item(fixture.firstSeat().getId()))
                         ))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.holdId").isString());
@@ -300,37 +256,27 @@ class ReservationControllerIntegrationTest {
                 fixture.show().getId(),
                 List.of(fixture.firstSeat().getId())
         ).get(0);
-        ShowSectionInventory inventory = showSectionInventoryRepository.findAllByShowIdAndSectionIdIn(
-                fixture.show().getId(),
-                List.of(fixture.firstSection().getId())
-        ).get(0);
 
         assertThat(showSeat.getStatus()).isEqualTo(ShowSeatStatus.HELD);
-        assertThat(inventory.getHoldQty()).isEqualTo(2);
     }
 
     private ReservationFixture createFixture() {
         Event event = eventRepository.save(Event.create("Reservation Test", "Reservation flow", EventStatus.PUBLISHED));
         Show show = showRepository.save(Show.schedule(event, LocalDateTime.of(2026, 7, 1, 19, 0), 801L));
-        Seat firstSeat = seatRepository.save(Seat.create("A1", 1, 1, 801L));
-        Seat secondSeat = seatRepository.save(Seat.create("A2", 1, 2, 801L));
-        Section firstSection = sectionRepository.save(Section.create("VIP", 801L));
-        Section secondSection = sectionRepository.save(Section.create("R", 801L));
+        Section section = sectionRepository.save(Section.create("A구역", 801L));
+        Seat firstSeat = seatRepository.save(Seat.create("A1", 1, 1, 801L, section));
+        Seat secondSeat = seatRepository.save(Seat.create("A2", 1, 2, 801L, section));
 
         showSeatRepository.save(ShowSeat.createAvailable(show, firstSeat, 150000));
         showSeatRepository.save(ShowSeat.createAvailable(show, secondSeat, 140000));
-        showSectionInventoryRepository.save(ShowSectionInventory.open(show, firstSection, 120000, 100));
-        showSectionInventoryRepository.save(ShowSectionInventory.open(show, secondSection, 90000, 100));
 
-        return new ReservationFixture(show, firstSeat, secondSeat, firstSection, secondSection);
+        return new ReservationFixture(show, firstSeat, secondSeat);
     }
 
     private String createHold(
             String accessToken,
             Long showId,
-            Long seatId,
-            Long sectionId,
-            int sectionQty
+            List<Long> seatIds
     ) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/holds")
                         .header("Authorization", bearer(accessToken))
@@ -338,10 +284,7 @@ class ReservationControllerIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json(new CreateHoldRequest(
                                 showId,
-                                List.of(
-                                        new CreateHoldRequest.Item(seatId, null, null),
-                                        new CreateHoldRequest.Item(null, sectionId, sectionQty)
-                                )
+                                seatIds.stream().map(CreateHoldRequest.Item::new).toList()
                         ))))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -364,28 +307,30 @@ class ReservationControllerIntegrationTest {
     private String createExpiredReservation(
             Long userId,
             Show show,
-            Seat seat,
-            Section section,
-            int sectionQty
+            Seat seat
     ) {
         ShowSeat showSeat = showSeatRepository.findAllByShowIdAndSeatIdIn(show.getId(), List.of(seat.getId())).get(0);
-        ShowSectionInventory inventory = showSectionInventoryRepository.findAllByShowIdAndSectionIdIn(
-                show.getId(),
-                List.of(section.getId())
-        ).get(0);
 
         showSeat.hold();
         showSeat.reserve();
-        inventory.hold(sectionQty);
 
         Hold hold = Hold.create(userId, show.getId(), LocalDateTime.now().plusMinutes(5));
         hold.addSeatItem(seat.getId(), showSeat.getPrice());
-        hold.addSectionItem(section.getId(), sectionQty, inventory.getPrice());
         hold.convert();
         holdRepository.save(hold);
 
         Reservation reservation = Reservation.createFromHold(hold, LocalDateTime.now().minusMinutes(1));
         return reservationRepository.save(reservation).getId();
+    }
+
+    private List<ShowSeatStatus> showSeatStatuses(ReservationFixture fixture) {
+        return showSeatRepository.findAllByShowIdAndSeatIdIn(
+                        fixture.show().getId(),
+                        List.of(fixture.firstSeat().getId(), fixture.secondSeat().getId())
+                )
+                .stream()
+                .map(ShowSeat::getStatus)
+                .toList();
     }
 
     private UserSession createUserSession() {
@@ -421,9 +366,7 @@ class ReservationControllerIntegrationTest {
     private record ReservationFixture(
             Show show,
             Seat firstSeat,
-            Seat secondSeat,
-            Section firstSection,
-            Section secondSection
+            Seat secondSeat
     ) {
     }
 

@@ -20,7 +20,7 @@ import org.springframework.security.core.Authentication;
 @Tag(name = "Hold")
 public interface HoldApiDocs {
 
-    @Operation(summary = "홀드 생성", description = "HLD-001. 회차 기준으로 좌석/구역을 임시 선점합니다. 좌석은 qty=1, 구역은 qty를 필수로 전달합니다.")
+    @Operation(summary = "홀드 생성", description = "HLD-001. 회차 기준으로 판매 중인 좌석을 임시 선점합니다. 각 아이템은 seatId 하나를 전달합니다.")
     @RequestBody(
             required = true,
             description = "홀드 생성 요청",
@@ -43,7 +43,7 @@ public interface HoldApiDocs {
             @ApiResponse(responseCode = "400", description = "홀드 요청 형식이 올바르지 않습니다."),
             @ApiResponse(responseCode = "401", description = "Bearer 토큰이 필요합니다."),
             @ApiResponse(responseCode = "404", description = "회차를 찾을 수 없습니다."),
-            @ApiResponse(responseCode = "409", description = "이미 점유된 좌석/구역이 포함되어 있습니다.")
+            @ApiResponse(responseCode = "409", description = "이미 점유된 좌석이 포함되어 있습니다.")
     })
     ResponseEntity<CreateHoldResponse> create(
             @Parameter(hidden = true) Authentication authentication,

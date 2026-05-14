@@ -10,9 +10,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 
 @Repository
 @RequiredArgsConstructor
@@ -67,14 +67,5 @@ public class ReservationRepositoryAdapter implements ReservationRepository {
             LocalDateTime now
     ) {
         return jpaRepository.findAllPendingExpiredByShowIdAndSeatIdIn(showId, now, seatIds);
-    }
-
-    @Override
-    public List<Reservation> findAllPendingExpiredByShowIdAndSectionIdIn(
-            Long showId,
-            Collection<Long> sectionIds,
-            LocalDateTime now
-    ) {
-        return jpaRepository.findAllPendingExpiredByShowIdAndSectionIdIn(showId, now, sectionIds);
     }
 }

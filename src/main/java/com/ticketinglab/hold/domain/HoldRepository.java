@@ -12,5 +12,4 @@ public interface HoldRepository {
     List<String> findActiveExpiredIds(LocalDateTime now, int limit);
     List<String> findActiveExpiredIdsByShowId(Long showId, LocalDateTime now, int limit);
     List<Hold> findAllActiveExpiredByShowIdAndSeatIdIn(Long showId, Collection<Long> seatIds, LocalDateTime now);
-    List<Hold> findAllActiveExpiredByShowIdAndSectionIdIn(Long showId, Collection<Long> sectionIds, LocalDateTime now);
 }

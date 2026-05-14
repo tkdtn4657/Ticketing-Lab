@@ -188,18 +188,17 @@ function syncEndpointPreview() {
 
 function syncSummary() {
     const availableSeatCount = state.seats.filter((seat) => seat.available).length;
-    const totalRemaining = state.sections.reduce((sum, section) => sum + Number(section.remainingQty || 0), 0);
+    const sectionNames = new Set(state.seats.map((seat) => seat.sectionName || "미지정"));
     const loaded = state.selectedShowId != null;
 
     dom.stateShowId.textContent = loaded ? String(state.selectedShowId) : "-";
     dom.stateSeatCount.textContent = String(state.seats.length);
     dom.stateAvailableSeats.textContent = String(availableSeatCount);
-    dom.stateSectionCount.textContent = String(state.sections.length);
-    dom.stateTotalRemaining.textContent = String(totalRemaining);
+    dom.stateSectionCount.textContent = String(sectionNames.size);
+    dom.stateTotalRemaining.textContent = String(availableSeatCount);
     dom.stateAvailabilitySnapshot.value = JSON.stringify({
         showId: state.selectedShowId,
-        seats: state.seats,
-        sections: state.sections
+        seats: state.seats
     }, null, 2);
 
     dom.seatsSummaryBadge.textContent = state.seats.length
@@ -207,10 +206,10 @@ function syncSummary() {
         : "No Seats Loaded";
     dom.seatsSummaryBadge.className = `status ${state.seats.length ? "ready" : "idle"}`;
 
-    dom.sectionsSummaryBadge.textContent = state.sections.length
-        ? `${state.sections.length} Section${state.sections.length > 1 ? "s" : ""} Loaded`
-        : "No Sections Loaded";
-    dom.sectionsSummaryBadge.className = `status ${state.sections.length ? "ready" : "idle"}`;
+    dom.sectionsSummaryBadge.textContent = state.seats.length
+        ? `${sectionNames.size} Seat Section${sectionNames.size > 1 ? "s" : ""}`
+        : "No Seat Sections";
+    dom.sectionsSummaryBadge.className = `status ${state.seats.length ? "ready" : "idle"}`;
 
     dom.consoleStatus.textContent = loaded ? "Loaded" : "Ready";
     dom.consoleStatus.className = `status ${loaded ? "ready" : "idle"}`;
@@ -252,30 +251,39 @@ function renderSeatList() {
 function renderEmptySectionList() {
     dom.sectionListView.innerHTML = `
         <article class="empty-panel">
-            <strong>불러온 구역 정보가 없습니다.</strong>
-            <p class="placeholder-copy">회차 가용성을 조회하면 구역별 잔여 수량이 표시됩니다. 구역 인벤토리가 없으면 빈 배열 응답이 정상입니다.</p>
+            <strong>불러온 좌석 구역 정보가 없습니다.</strong>
+            <p class="placeholder-copy">회차 가용성을 조회하면 seats 배열을 기준으로 구역별 좌석 수가 표시됩니다.</p>
         </article>
     `;
 }
 
 function renderSectionList() {
-    if (!state.sections.length) {
+    if (!state.seats.length) {
         renderEmptySectionList();
         return;
     }
 
-    dom.sectionListView.innerHTML = state.sections.map((section) => `
+    const sections = Object.values(state.seats.reduce((groups, seat) => {
+        const key = seat.sectionId ?? seat.sectionName ?? "미지정";
+        const name = seat.sectionName || "미지정";
+        groups[key] ??= { sectionId: seat.sectionId, name, total: 0, available: 0 };
+        groups[key].total += 1;
+        groups[key].available += seat.available ? 1 : 0;
+        return groups;
+    }, {}));
+
+    dom.sectionListView.innerHTML = sections.map((section) => `
         <article class="inventory-card section-card">
             <div class="inventory-head">
                 <div>
-                    <h3>${escapeHtml(section.name || `Section #${section.sectionId}`)}</h3>
+                    <h3>${escapeHtml(section.name)}</h3>
                     <p class="muted">sectionId ${escapeHtml(section.sectionId)}</p>
                 </div>
-                <span class="status-token section-remaining">remaining ${escapeHtml(section.remainingQty)}</span>
+                <span class="status-token section-remaining">${escapeHtml(section.available)}/${escapeHtml(section.total)}</span>
             </div>
             <div class="meta-row">
-                <span class="token">price ${escapeHtml(section.price)}</span>
-                <span class="token">remainingQty ${escapeHtml(section.remainingQty)}</span>
+                <span class="token">available ${escapeHtml(section.available)}</span>
+                <span class="token">total ${escapeHtml(section.total)}</span>
             </div>
         </article>
     `).join("");
@@ -321,7 +329,7 @@ async function fetchAvailability(showId) {
 
         if (result.ok && result.body) {
             state.seats = Array.isArray(result.body.seats) ? result.body.seats : [];
-            state.sections = Array.isArray(result.body.sections) ? result.body.sections : [];
+            state.sections = [];
         } else {
             state.seats = [];
             state.sections = [];

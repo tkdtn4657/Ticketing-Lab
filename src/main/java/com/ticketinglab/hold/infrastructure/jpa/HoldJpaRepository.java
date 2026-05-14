@@ -81,41 +81,12 @@ public interface HoldJpaRepository extends JpaRepository<Hold, String> {
             @Param("status") HoldStatus status
     );
 
-    @Query("""
-            select distinct hold
-            from Hold hold
-            left join fetch hold.items
-            where hold.showId = :showId
-              and hold.status = :status
-              and hold.expiresAt <= :now
-              and exists (
-                    select 1
-                    from HoldItem holdItem
-                    where holdItem.hold = hold
-                      and holdItem.sectionId in :sectionIds
-              )
-            """)
-    List<Hold> findAllActiveExpiredByShowIdAndSectionIdIn(
-            @Param("showId") Long showId,
-            @Param("now") LocalDateTime now,
-            @Param("sectionIds") Collection<Long> sectionIds,
-            @Param("status") HoldStatus status
-    );
-
     default List<Hold> findAllActiveExpiredByShowIdAndSeatIdIn(
             Long showId,
             LocalDateTime now,
             Collection<Long> seatIds
     ) {
         return findAllActiveExpiredByShowIdAndSeatIdIn(showId, now, seatIds, HoldStatus.ACTIVE);
-    }
-
-    default List<Hold> findAllActiveExpiredByShowIdAndSectionIdIn(
-            Long showId,
-            LocalDateTime now,
-            Collection<Long> sectionIds
-    ) {
-        return findAllActiveExpiredByShowIdAndSectionIdIn(showId, now, sectionIds, HoldStatus.ACTIVE);
     }
 
     default List<String> findActiveExpiredIds(LocalDateTime now, int limit) {

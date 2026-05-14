@@ -24,7 +24,7 @@
                 <li><strong>Hold ID</strong>로 <code>POST /api/reservations</code>를 호출해 예약을 생성합니다.</li>
                 <li>생성된 <code>reservationId</code>로 상세 조회를 호출해 상태와 총액, items를 확인합니다.</li>
                 <li><strong>내 예약 목록</strong>으로 페이지/상태 필터 응답을 점검합니다.</li>
-                <li><strong>가용성 조회</strong>로 좌석 <code>RESERVED</code>, 구역 <code>remainingQty</code> 반영을 확인합니다.</li>
+                <li><strong>가용성 조회</strong>로 예약 좌석의 <code>available=false</code> 반영을 확인합니다.</li>
             </ol>
         </div>
     </header>
@@ -111,7 +111,7 @@
                     <strong>체크 포인트</strong>
                     <ul>
                         <li>성공 시 hold는 <code>CONVERTED</code>, reservation은 <code>PENDING_PAYMENT</code> 상태가 됩니다.</li>
-                        <li>좌석은 <code>RESERVED</code>로 바뀌고, 구역 수량은 기존 hold 상태를 유지합니다.</li>
+                        <li>좌석은 <code>RESERVED</code>로 바뀌고, 결제 전까지 다른 사용자가 다시 선점할 수 없습니다.</li>
                         <li>본인 hold가 아니거나 존재하지 않으면 <code>404 Not Found</code>가 내려옵니다.</li>
                         <li>만료된 reservation 자원은 새 hold 생성 시 lazy release 됩니다.</li>
                     </ul>
@@ -218,10 +218,10 @@
             <section class="card board-card">
                 <div class="section-head compact-head">
                     <div>
-                        <p class="eyebrow">SECTIONS</p>
-                        <h2>구역 잔여 현황</h2>
+                        <p class="eyebrow">SECTION MAP</p>
+                        <h2>좌석 구역 현황</h2>
                     </div>
-                    <span id="sections-summary-badge" class="status idle">No Sections Loaded</span>
+                    <span id="sections-summary-badge" class="status idle">No Seat Sections</span>
                 </div>
                 <div id="section-list-view" class="inventory-grid"></div>
             </section>

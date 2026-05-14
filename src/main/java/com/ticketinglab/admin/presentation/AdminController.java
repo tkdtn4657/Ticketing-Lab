@@ -4,7 +4,6 @@ import com.ticketinglab.admin.application.ListAdminEventsUseCase;
 import com.ticketinglab.admin.application.ListAdminShowsUseCase;
 import com.ticketinglab.admin.application.ListAdminVenuesUseCase;
 import com.ticketinglab.admin.application.CreateEventUseCase;
-import com.ticketinglab.admin.application.CreateShowSectionInventoriesUseCase;
 import com.ticketinglab.admin.application.CreateShowSeatsUseCase;
 import com.ticketinglab.admin.application.CreateShowUseCase;
 import com.ticketinglab.admin.application.ListVenueSectionsUseCase;
@@ -19,7 +18,6 @@ import com.ticketinglab.admin.presentation.dto.CreateEventRequest;
 import com.ticketinglab.admin.presentation.dto.CreateEventResponse;
 import com.ticketinglab.admin.presentation.dto.CreateShowRequest;
 import com.ticketinglab.admin.presentation.dto.CreateShowResponse;
-import com.ticketinglab.admin.presentation.dto.CreateShowSectionInventoriesRequest;
 import com.ticketinglab.admin.presentation.dto.CreateShowSeatsRequest;
 import com.ticketinglab.admin.presentation.dto.CreatedCountResponse;
 import com.ticketinglab.admin.presentation.dto.RegisterVenueSectionsRequest;
@@ -55,7 +53,6 @@ public class AdminController implements AdminApiDocs {
     private final ListAdminShowsUseCase listAdminShowsUseCase;
     private final CreateShowUseCase createShowUseCase;
     private final CreateShowSeatsUseCase createShowSeatsUseCase;
-    private final CreateShowSectionInventoriesUseCase createShowSectionInventoriesUseCase;
 
     @PostMapping("/venues/upsert")
     @Override
@@ -155,14 +152,5 @@ public class AdminController implements AdminApiDocs {
             @Valid @RequestBody CreateShowSeatsRequest request
     ) {
         return ResponseEntity.ok(createShowSeatsUseCase.execute(showId, request));
-    }
-
-    @PostMapping("/shows/{showId}/section-inventories")
-    @Override
-    public ResponseEntity<CreatedCountResponse> createShowSectionInventories(
-            @PathVariable Long showId,
-            @Valid @RequestBody CreateShowSectionInventoriesRequest request
-    ) {
-        return ResponseEntity.ok(createShowSectionInventoriesUseCase.execute(showId, request));
     }
 }
