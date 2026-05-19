@@ -6,7 +6,11 @@ import com.ticketinglab.hold.domain.HoldRepository;
 import com.ticketinglab.show.domain.ShowSeat;
 import com.ticketinglab.show.domain.ShowSeatRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -19,11 +23,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class HoldResourceManager {
 
     private final HoldRepository holdRepository;
     private final ShowSeatRepository showSeatRepository;
+    private final SeatHoldPreLockManager seatHoldPreLockManager;
 
     public int expireActiveHolds(LocalDateTime now, int limit) {
         return expireActiveHoldIds(holdRepository.findActiveExpiredIds(now, limit), now);
@@ -85,6 +91,7 @@ public class HoldResourceManager {
         hold.cancel();
         releaseResources(hold, lockedResources);
         holdRepository.save(hold);
+        releaseSeatPreLocksAfterCommit(hold);
     }
 
     private void expire(Hold hold, LocalDateTime now, LockedResources lockedResources) {
@@ -95,6 +102,34 @@ public class HoldResourceManager {
         hold.expire(now);
         releaseResources(hold, lockedResources);
         holdRepository.save(hold);
+        releaseSeatPreLocksAfterCommit(hold);
+    }
+
+    public void releaseSeatPreLocksAfterCommit(Hold hold) {
+        Set<Long> seatIds = seatIdsOf(hold);
+        if (seatIds.isEmpty()) {
+            return;
+        }
+
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            releaseSeatPreLocks(hold.getShowId(), seatIds, hold.getId());
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                releaseSeatPreLocks(hold.getShowId(), seatIds, hold.getId());
+            }
+        });
+    }
+
+    private void releaseSeatPreLocks(Long showId, Collection<Long> seatIds, String holdId) {
+        try {
+            seatHoldPreLockManager.releaseHold(showId, seatIds, holdId);
+        } catch (DataAccessException exception) {
+            log.warn("failed to release confirmed seat hold pre-lock. holdId={}", holdId, exception);
+        }
     }
 
     private int expireActiveHoldIds(Collection<String> holdIds, LocalDateTime now) {

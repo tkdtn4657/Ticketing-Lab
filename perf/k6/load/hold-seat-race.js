@@ -1,6 +1,7 @@
 import http from "k6/http";
 import { check } from "k6";
 import { Counter } from "k6/metrics";
+import { sleep } from "k6";
 import {
   createAdminFixture,
   login,
@@ -14,6 +15,7 @@ const RACE_USERS = Number(__ENV.RACE_USERS || 10);
 const MAX_DURATION = __ENV.MAX_DURATION || "30s";
 const SETUP_TIMEOUT = __ENV.SETUP_TIMEOUT || "10m";
 const SETUP_BATCH_SIZE = positiveNumber(__ENV.SETUP_BATCH_SIZE, 50);
+const SETUP_SETTLE_SECONDS = positiveNumber(__ENV.SETUP_SETTLE_SECONDS, 0);
 
 http.setResponseCallback(http.expectedStatuses(200, 409));
 
@@ -64,6 +66,10 @@ export function setup() {
   );
   const tokens = signupAndLoginMany(emails, userPassword, SETUP_BATCH_SIZE)
     .map((tokenPair) => tokenPair.accessToken);
+
+  if (SETUP_SETTLE_SECONDS > 0) {
+    sleep(SETUP_SETTLE_SECONDS);
+  }
 
   return {
     showId: fixture.showId,

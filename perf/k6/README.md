@@ -127,14 +127,19 @@ docker run --rm `
   -e MAX_DURATION=2m `
   -e SETUP_TIMEOUT=5m `
   -e SETUP_BATCH_SIZE=100 `
+  -e SETUP_SETTLE_SECONDS=20 `
   -e K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write `
   grafana/k6 run -o experimental-prometheus-rw /scripts/load/hold-seat-race.js
 ```
 
 이 시나리오의 기대 결과는 `hold_success=1`, `hold_conflict=999`, `hold_unexpected=0`이다.
-같은 좌석에 요청이 몰릴 때 DB row lock/optimistic lock 충돌이 정상적으로 `409 Conflict`로 흘러가는지 확인한다.
+같은 좌석에 요청이 몰릴 때 Redis pre-lock이 추가 요청을 먼저 차단하고, 최종 정합성은 DB row lock/optimistic lock 충돌이 `409 Conflict`로 흘러가는지 확인한다.
 `SETUP_TIMEOUT`은 테스트 전 사용자 생성/로그인 준비 단계 제한 시간이고, `MAX_DURATION`은 실제 Hold 동시 요청 실행 단계 제한 시간이다.
 `SETUP_BATCH_SIZE`는 사용자 회원가입/로그인을 몇 개씩 묶어서 병렬 요청할지 정한다. 값을 키우면 준비 단계는 빨라질 수 있지만, BCrypt 해시/검증이 한꺼번에 실행되어 백엔드 CPU가 더 크게 튈 수 있다.
+`SETUP_SETTLE_SECONDS`는 사용자 준비 부하와 실제 Hold 경쟁 부하가 Grafana에서 섞이지 않도록 setup 종료 후 대기하는 시간이다.
+
+Redis pre-lock은 기본적으로 `HOLD_PRE_LOCK_ENABLED=true`, `HOLD_PRE_LOCK_TTL=60s`로 동작한다.
+Before/After 비교가 필요하면 `.env`에서 `HOLD_PRE_LOCK_ENABLED=false`로 내리고 백엔드를 재기동한 뒤 같은 k6 명령을 다시 실행한다.
 
 결제 멱등성:
 
@@ -193,6 +198,7 @@ k6 콘솔에서 아래 값을 본다.
 - `Hikari Pool Usage`: HikariCP 커넥션 풀 사용률이다.
 
 동일 좌석 1000명 경쟁에서 `hold_success=1`, `hold_conflict=999`, `hold_unexpected=0`이면서 `PostgreSQL Tuple Lock Waits Peak`가 `1` 이상이면, 정합성은 맞고 병목은 같은 좌석 row lock 경합으로 해석한다.
+Redis pre-lock 적용 후에는 같은 시나리오에서 `PostgreSQL Tuple Lock Waits Peak`, `Hikari Pending Connections`, `Hikari Pool Usage`가 내려가고 `Redis Commands`가 올라가는지 비교한다.
 
 ## 실행 리포트
 

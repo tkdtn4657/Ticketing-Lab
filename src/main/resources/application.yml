@@ -17,6 +17,8 @@ spring:
       port: ${REDIS_PORT:6379}
       connect-timeout: ${REDIS_CONNECT_TIMEOUT:3s}
       timeout: ${REDIS_TIMEOUT:2s}
+      repositories:
+        enabled: false
 
   jpa:
     hibernate:
@@ -82,6 +84,9 @@ app:
       max-sessions-per-user: ${TOKEN_SESSION_MAX_SESSIONS_PER_USER:5}
   hold:
     ttl-minutes: 5
+    pre-lock:
+      enabled: ${HOLD_PRE_LOCK_ENABLED:true}
+      ttl: ${HOLD_PRE_LOCK_TTL:60s}
   reservation:
     ttl-minutes: 15
   expiration:

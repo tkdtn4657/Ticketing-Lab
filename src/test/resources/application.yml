@@ -39,6 +39,9 @@ app:
       max-sessions-per-user: 5
   hold:
     ttl-minutes: 5
+    pre-lock:
+      enabled: false
+      ttl: 60s
   reservation:
     ttl-minutes: 15
   expiration:

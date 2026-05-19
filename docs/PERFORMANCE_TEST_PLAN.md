@@ -403,6 +403,8 @@ k6 run .\perf\k6\load\hold-seat-race.js
 
 - 회차 가용성 조회는 읽기 폭주 시 첫 번째 병목 후보다.
 - 홀드 / 예약 / 결제는 정합성 보호를 위해 락이 걸리는 구간이므로 lock wait를 꼭 봐야 한다.
+- 동일 좌석 Hold 경쟁은 Redis pre-lock으로 DB 진입 전 중복 요청을 먼저 차단하고, DB row lock과 `@Version`은 최종 정합성 보호선으로 유지한다.
+- Redis pre-lock 효과는 적용 전후의 PostgreSQL tuple lock peak, Hikari pending/usage, Redis command 증가를 함께 비교한다.
 - 결제 멱등성은 정상 재시도뿐 아니라 경쟁 상황에서도 같은 결과를 유지하는지 확인해야 한다.
 - Hold / Reservation 만료 해제는 lazy release 중심이므로 만료 자원이 많은 상황에서 조회/생성 API에 어떤 추가 비용이 붙는지 봐야 한다.
 

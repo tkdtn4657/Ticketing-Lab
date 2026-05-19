@@ -9,12 +9,17 @@ import com.ticketinglab.hold.presentation.dto.CreateHoldResponse;
 import com.ticketinglab.reservation.application.ReservationResourceManager;
 import com.ticketinglab.show.domain.ShowSeat;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -24,8 +29,10 @@ import java.util.Set;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class CreateHoldUseCase {
 
@@ -33,25 +40,31 @@ public class CreateHoldUseCase {
     private final HoldRepository holdRepository;
     private final HoldResourceManager holdResourceManager;
     private final ReservationResourceManager reservationResourceManager;
+    private final SeatHoldPreLockManager seatHoldPreLockManager;
 
     @Value("${app.hold.ttl-minutes:5}")
     private long holdTtlMinutes;
 
+    @Value("${app.hold.pre-lock.ttl:60s}")
+    private Duration preLockTtl;
+
     @Transactional
     public CreateHoldResponse execute(Long userId, CreateHoldRequest request) {
-        Show show = showRepository.findById(request.showId())
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "show not found"));
-
         RequestedItems requestedItems = normalize(request.items());
         LocalDateTime now = LocalDateTime.now();
-
-        reservationResourceManager.expirePendingReservations(
-                show.getId(),
-                requestedItems.seatIds(),
-                now
-        );
+        SeatHoldPreLock preLock = acquirePreLock(request.showId(), requestedItems.seatIds());
+        boolean preLockHandledByTransaction = false;
 
         try {
+            Show show = showRepository.findById(request.showId())
+                    .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "show not found"));
+
+            reservationResourceManager.expirePendingReservations(
+                    show.getId(),
+                    requestedItems.seatIds(),
+                    now
+            );
+
             HoldResourceManager.LockedResources lockedResources = holdResourceManager.prepareForCreate(
                     show.getId(),
                     requestedItems.seatIds(),
@@ -64,9 +77,71 @@ public class CreateHoldUseCase {
             applyHoldItems(hold, requestedItems.items(), lockedResources);
 
             Hold savedHold = holdRepository.save(hold);
+            confirmPreLockAfterTransaction(preLock, savedHold.getId());
+            preLockHandledByTransaction = true;
             return new CreateHoldResponse(savedHold.getId(), savedHold.getExpiresAt());
         } catch (OptimisticLockingFailureException exception) {
+            releasePreLockIfNeeded(preLock, preLockHandledByTransaction);
             throw new ResponseStatusException(CONFLICT, "seat not available", exception);
+        } catch (RuntimeException exception) {
+            releasePreLockIfNeeded(preLock, preLockHandledByTransaction);
+            throw exception;
+        }
+    }
+
+    private SeatHoldPreLock acquirePreLock(Long showId, Set<Long> seatIds) {
+        try {
+            return seatHoldPreLockManager.acquire(showId, seatIds, preLockTtl)
+                    .orElseThrow(() -> new ResponseStatusException(CONFLICT, "seat not available"));
+        } catch (DataAccessException exception) {
+            throw new ResponseStatusException(SERVICE_UNAVAILABLE, "seat pre-lock unavailable", exception);
+        }
+    }
+
+    private void confirmPreLockAfterTransaction(SeatHoldPreLock preLock, String holdId) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            confirmPreLock(preLock, holdId);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                confirmPreLock(preLock, holdId);
+            }
+
+            @Override
+            public void afterCompletion(int status) {
+                if (status != STATUS_COMMITTED) {
+                    releasePreLock(preLock);
+                }
+            }
+        });
+    }
+
+    private void confirmPreLock(SeatHoldPreLock preLock, String holdId) {
+        try {
+            seatHoldPreLockManager.confirmHold(preLock, holdId, preLockTtl);
+        } catch (DataAccessException exception) {
+            log.warn("failed to confirm seat hold pre-lock. holdId={}", holdId, exception);
+        }
+    }
+
+    private void releasePreLockIfNeeded(SeatHoldPreLock preLock, boolean handledByTransaction) {
+        if (!handledByTransaction) {
+            releasePreLock(preLock);
+        }
+    }
+
+    private void releasePreLock(SeatHoldPreLock preLock) {
+        try {
+            seatHoldPreLockManager.release(preLock);
+        } catch (DataAccessException exception) {
+            log.warn("failed to release seat hold pre-lock. showId={}, seatIds={}",
+                    preLock.showId(),
+                    preLock.seatIds(),
+                    exception
+            );
         }
     }
 

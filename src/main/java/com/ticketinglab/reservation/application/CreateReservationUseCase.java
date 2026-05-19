@@ -59,6 +59,7 @@ public class CreateReservationUseCase {
         }
 
         holdRepository.save(hold);
+        holdResourceManager.releaseSeatPreLocksAfterCommit(hold);
         Reservation savedReservation = reservationRepository.save(reservation);
         return new CreateReservationResponse(savedReservation.getId(), savedReservation.getStatus().name());
     }
