@@ -27,6 +27,8 @@ out/
 .env
 src/main/resources/application-local-secret.yml
 logs/
+perf/k6/results/*
+!perf/k6/results/.gitkeep
 !**/src/main/**/out/
 !**/src/test/**/out/
 

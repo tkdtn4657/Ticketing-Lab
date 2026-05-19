@@ -10,6 +10,7 @@ import com.ticketinglab.reservation.application.ReservationResourceManager;
 import com.ticketinglab.show.domain.ShowSeat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -50,19 +51,23 @@ public class CreateHoldUseCase {
                 now
         );
 
-        HoldResourceManager.LockedResources lockedResources = holdResourceManager.prepareForCreate(
-                show.getId(),
-                requestedItems.seatIds(),
-                now
-        );
+        try {
+            HoldResourceManager.LockedResources lockedResources = holdResourceManager.prepareForCreate(
+                    show.getId(),
+                    requestedItems.seatIds(),
+                    now
+            );
 
-        validateResourceExistence(requestedItems, lockedResources);
+            validateResourceExistence(requestedItems, lockedResources);
 
-        Hold hold = Hold.create(userId, show.getId(), now.plusMinutes(holdTtlMinutes));
-        applyHoldItems(hold, requestedItems.items(), lockedResources);
+            Hold hold = Hold.create(userId, show.getId(), now.plusMinutes(holdTtlMinutes));
+            applyHoldItems(hold, requestedItems.items(), lockedResources);
 
-        Hold savedHold = holdRepository.save(hold);
-        return new CreateHoldResponse(savedHold.getId(), savedHold.getExpiresAt());
+            Hold savedHold = holdRepository.save(hold);
+            return new CreateHoldResponse(savedHold.getId(), savedHold.getExpiresAt());
+        } catch (OptimisticLockingFailureException exception) {
+            throw new ResponseStatusException(CONFLICT, "seat not available", exception);
+        }
     }
 
     private RequestedItems normalize(List<CreateHoldRequest.Item> items) {

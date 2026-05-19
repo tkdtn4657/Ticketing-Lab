@@ -108,8 +108,15 @@
 - DB 로그
 - `docker stats` 또는 OS 수준 CPU / 메모리 관측
 - PostgreSQL slow query / lock wait 확인
-- 추후 도입 권장:
+- 개발 환경 도입:
   `Actuator + Micrometer + Prometheus + Grafana`
+
+현재 워크스페이스 루트 Docker Compose에는 개발용 Prometheus/Grafana 구성이 포함되어 있다.
+
+- Grafana: `http://localhost:13000`
+- Prometheus: `http://localhost:19090`
+- 기본 대시보드: `Ticketing Lab Overview`
+- k6 실행 메트릭은 `backend/perf/k6/README.md`의 Prometheus remote write 명령으로 함께 적재한다.
 
 ## 권장 실행 환경
 
@@ -417,7 +424,8 @@ k6 run .\perf\k6\load\hold-seat-race.js
 
 ## 다음 단계 제안
 
-- `perf/k6/` 폴더 생성
-- `PERF-001`, `PERF-003`, `PERF-006` 시나리오부터 `k6` 스크립트 작성
+- `perf/k6/README.md` 기준으로 1차 스크립트를 반복 실행한다.
+- 현재 작성된 1차 스크립트:
+  `PERF-001` 공개 조회 폭주, `PERF-003` 동일 좌석 홀드 경쟁, `PERF-006` 결제 멱등성 검증
 - 성능 테스트와 함께 볼 최소 관측 체계 준비
   요청 추적 ID, 구조화 로그, DB lock / slow query 확인
