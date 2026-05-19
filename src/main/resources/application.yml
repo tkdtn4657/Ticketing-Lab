@@ -87,6 +87,9 @@ app:
     pre-lock:
       enabled: ${HOLD_PRE_LOCK_ENABLED:true}
       ttl: ${HOLD_PRE_LOCK_TTL:60s}
+    fast-fail:
+      enabled: ${HOLD_FAST_FAIL_ENABLED:false}
+      max-concurrent: ${HOLD_FAST_FAIL_MAX_CONCURRENT:50}
   reservation:
     ttl-minutes: 15
   expiration:

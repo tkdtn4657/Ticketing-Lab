@@ -42,6 +42,9 @@ app:
     pre-lock:
       enabled: false
       ttl: 60s
+    fast-fail:
+      enabled: false
+      max-concurrent: 50
   reservation:
     ttl-minutes: 15
   expiration:

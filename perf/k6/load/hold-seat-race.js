@@ -17,7 +17,7 @@ const SETUP_TIMEOUT = __ENV.SETUP_TIMEOUT || "10m";
 const SETUP_BATCH_SIZE = positiveNumber(__ENV.SETUP_BATCH_SIZE, 50);
 const SETUP_SETTLE_SECONDS = positiveNumber(__ENV.SETUP_SETTLE_SECONDS, 0);
 
-http.setResponseCallback(http.expectedStatuses(200, 409));
+http.setResponseCallback(http.expectedStatuses(200, 409, 429));
 
 export const options = {
   batch: SETUP_BATCH_SIZE,
@@ -34,7 +34,7 @@ export const options = {
   },
   thresholds: {
     hold_success: ["count==1"],
-    hold_conflict: [`count>=${RACE_USERS - 1}`],
+    hold_rejected: [`count>=${RACE_USERS - 1}`],
     hold_unexpected: ["count==0"],
     "http_req_failed{scenario:hold_same_seat_race}": ["rate==0"],
     "http_req_duration{scenario:hold_same_seat_race}": ["p(95)<3000", "p(99)<10000"],
@@ -44,6 +44,8 @@ export const options = {
 
 const holdSuccess = new Counter("hold_success");
 const holdConflict = new Counter("hold_conflict");
+const holdFastFail = new Counter("hold_fast_fail");
+const holdRejected = new Counter("hold_rejected");
 const holdUnexpected = new Counter("hold_unexpected");
 
 export function setup() {
@@ -93,13 +95,17 @@ export default function (data) {
     holdSuccess.add(1);
   } else if (response.status === 409) {
     holdConflict.add(1);
+    holdRejected.add(1);
+  } else if (response.status === 429) {
+    holdFastFail.add(1);
+    holdRejected.add(1);
   } else {
     holdUnexpected.add(1);
     console.warn(`unexpected hold response: status=${response.status}, body=${response.body}`);
   }
 
   check(response, {
-    "hold race returns 200 or 409": (res) => res.status === 200 || res.status === 409,
+    "hold race returns 200, 409, or 429": (res) => [200, 409, 429].includes(res.status),
   });
 }
 

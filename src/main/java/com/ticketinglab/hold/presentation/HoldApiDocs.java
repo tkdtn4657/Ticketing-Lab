@@ -43,7 +43,8 @@ public interface HoldApiDocs {
             @ApiResponse(responseCode = "400", description = "홀드 요청 형식이 올바르지 않습니다."),
             @ApiResponse(responseCode = "401", description = "Bearer 토큰이 필요합니다."),
             @ApiResponse(responseCode = "404", description = "회차를 찾을 수 없습니다."),
-            @ApiResponse(responseCode = "409", description = "이미 점유된 좌석이 포함되어 있습니다.")
+            @ApiResponse(responseCode = "409", description = "이미 점유된 좌석이 포함되어 있습니다."),
+            @ApiResponse(responseCode = "429", description = "순간 Hold 요청량이 처리 한도를 초과했습니다.")
     })
     ResponseEntity<CreateHoldResponse> create(
             @Parameter(hidden = true) Authentication authentication,
