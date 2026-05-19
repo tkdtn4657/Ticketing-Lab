@@ -5,6 +5,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,9 @@ public class OpenApiConfig {
     @Bean
     OpenAPI ticketingLabOpenApi() {
         return new OpenAPI()
+                .servers(List.of(new Server()
+                        .url("/")
+                        .description("현재 Swagger UI에 접속한 origin 기준")))
                 .info(new Info()
                         .title("Ticketing Lab API")
                         .version("v1")
