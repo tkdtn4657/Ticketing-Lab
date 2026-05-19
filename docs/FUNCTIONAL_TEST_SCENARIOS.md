@@ -18,6 +18,27 @@
 - 상태 전이가 문서와 코드 의도대로 일어나는가
 - 후속 API에서 이전 상태 변화가 올바르게 반영되는가
 
+## main 브랜치 검증 결과
+
+- 기준 브랜치:
+  `backend` 로컬 `main`
+- 검증 명령:
+  `./gradlew.bat -g .gradle-home test --rerun-tasks`
+- 검증 결과:
+  `BUILD SUCCESSFUL`
+- 현재 코드 기준 핵심 흐름:
+  `Admin 판매 준비 -> 공개 조회 -> Hold -> Reservation -> Payment -> Ticket -> Check-in`
+
+흐름 정합성은 아래 기준으로 판단한다.
+
+- 좌석 등록은 `sectionId`가 필수이므로 `Venue -> Section -> Seat -> Event -> Show -> ShowSeat` 순서로 판매 데이터를 준비한다.
+- Hold 요청 아이템은 현재 `seatId`만 지원한다.
+- Reservation은 본인 소유의 `ACTIVE` hold만 `PENDING_PAYMENT` 예약으로 전환한다.
+- Payment는 본인 소유 예약, 예약 총액, `Idempotency-Key`를 검증한 뒤 `PAID` 처리와 티켓 발급을 한 트랜잭션에서 수행한다.
+- Ticket은 `reservation_items` 기준으로 좌석 1개당 1장 발급된다.
+- Check-in은 `ADMIN` 또는 `MASTER_ADMIN`만 수행할 수 있고, 같은 `qrToken` 재사용은 `409 Conflict`가 되어야 한다.
+- 만료된 hold/reservation은 조회, 가용성 조회, 새 hold 생성, 스케줄러 시점에 lazy release 대상이 된다.
+
 ## 테스트 범위
 
 주요 범위는 아래와 같다.
@@ -89,15 +110,17 @@
 ### 데이터 준비
 
 - 이벤트와 회차
-- 공연장 좌석 / 구역 기준정보
+- 공연장 구역 / 좌석 기준정보
 - 회차별 판매 인벤토리
+
+> 좌석 등록 요청은 `sectionId`가 필수이므로, 수동 테스트 데이터는 반드시 구역을 먼저 만들고 좌석을 만든다.
 
 ## 권장 검증 순서
 
 기능 검증은 아래 순서로 진행하는 것을 권장한다.
 
 1. 인증
-2. 관리자 판매 준비
+2. 관리자 판매 준비: 공연장, 구역, 좌석, 이벤트, 회차, 회차 판매 좌석
 3. 공개 조회
 4. 홀드
 5. 예약
@@ -117,6 +140,26 @@
 - 권한이 없는 경우 인증/인가 오류가 발생하는가
 - 잘못된 입력에 대해 적절한 `4xx`가 발생하는가
 - 후속 조회 시 상태 변화가 반영되는가
+
+## 핵심 E2E 시나리오
+
+성능 테스트나 프론트엔드 연동 전에 아래 happy path를 한 번에 통과시킨다.
+
+| 순서 | 행위 | API | 기대 결과 |
+| --- | --- | --- | --- |
+| 1 | 일반 사용자 가입 / 로그인 | `POST /api/auth/signup`, `POST /api/auth/login` | `userId`, `Authorization` 헤더, `accessToken`, `refreshToken` 확보 |
+| 2 | 관리자 로그인 | `POST /api/auth/login` | 관리자 Bearer token 확보 |
+| 3 | 공연장 생성 | `POST /api/admin/venues/upsert` | `venueId` 확보 |
+| 4 | 구역 생성 | `POST /api/admin/venues/{venueId}/sections` | `createdCount`, `sectionId` 조회 가능 |
+| 5 | 좌석 생성 | `POST /api/admin/venues/{venueId}/seats` | `sectionId`가 연결된 `seatId` 확보 |
+| 6 | 이벤트 / 회차 생성 | `POST /api/admin/events`, `POST /api/admin/shows` | `eventId`, `showId` 확보 |
+| 7 | 회차 판매 좌석 생성 | `POST /api/admin/shows/{showId}/show-seats` | `createdCount` 반환 |
+| 8 | 가용성 조회 | `GET /api/shows/{showId}/availability` | 판매 좌석이 `available=true`로 보임 |
+| 9 | 좌석 홀드 | `POST /api/holds` | `holdId`, `expiresAt`, 좌석 `HELD` |
+| 10 | 예약 생성 | `POST /api/reservations` | `reservationId`, `PENDING_PAYMENT`, hold `CONVERTED`, 좌석 `RESERVED` |
+| 11 | 결제 승인 | `POST /api/payments/confirm` | `APPROVED`, 예약 `PAID`, 티켓 발급 |
+| 12 | 티켓 조회 | `GET /api/me/tickets` | `ISSUED` 티켓과 `qrToken` 확인 |
+| 13 | 체크인 | `POST /api/checkin` | 티켓 `USED`, `usedAt` 기록 |
 
 ## 기능 시나리오
 
@@ -207,22 +250,24 @@
   `200 OK`
   `venueId` 반환
 
-### FUNC-ADM-002 공연장 좌석 등록
-
-- 목적:
-  공연장 기준 좌석 등록 확인
-- 요청:
-  `POST /api/admin/venues/{venueId}/seats`
-- 기대 결과:
-  `200 OK`
-  `createdCount` 반환
-
-### FUNC-ADM-003 공연장 구역 등록
+### FUNC-ADM-002 공연장 구역 등록
 
 - 목적:
   공연장 기준 구역 등록 확인
 - 요청:
   `POST /api/admin/venues/{venueId}/sections`
+- 기대 결과:
+  `200 OK`
+  `createdCount` 반환
+
+### FUNC-ADM-003 공연장 좌석 등록
+
+- 목적:
+  공연장 기준 좌석 등록 확인
+- 사전 조건:
+  등록할 좌석마다 유효한 `sectionId` 존재
+- 요청:
+  `POST /api/admin/venues/{venueId}/seats`
 - 기대 결과:
   `200 OK`
   `createdCount` 반환
@@ -251,11 +296,22 @@
 
 - 목적:
   회차별 좌석 판매 정보 생성 확인
+- 사전 조건:
+  좌석이 구역에 연결되어 있음
 - 요청:
   `POST /api/admin/shows/{showId}/show-seats`
 - 기대 결과:
   `200 OK`
   `createdCount` 반환
+
+### FUNC-ADM-007 관리자 준비 데이터 검증 실패
+
+- 목적:
+  판매 준비 API의 데이터 정합성 검증 확인
+- 요청 / 기대 결과:
+  구역 없는 좌석 등록 또는 유효하지 않은 `sectionId`는 `400 Bad Request`
+  중복 좌석 label, 중복 구역 name, 중복 회차 판매 좌석은 `409 Conflict`
+  다른 관리자가 소유한 venue/event로 upsert 또는 show 생성 시 `403 Forbidden`
 
 ### FUNC-ADM-008 공연장 목록 조회
 
@@ -350,6 +406,15 @@
   `200 OK`
   좌석 목록과 좌석별 구역 정보 반환
 
+### FUNC-VIEW-004 공개 조회 실패 케이스
+
+- 목적:
+  공개 조회 API의 입력 검증과 not found 처리 확인
+- 요청 / 기대 결과:
+  `GET /api/events?status=INVALID`는 `400 Bad Request`
+  존재하지 않는 `eventId` 상세 조회는 `404 Not Found`
+  존재하지 않는 `showId` 가용성 조회는 `404 Not Found`
+
 ### FUNC-HOLD-001 홀드 생성 성공
 
 - 목적:
@@ -379,7 +444,7 @@
   `DELETE /api/holds/{holdId}`
 - 기대 결과:
   `204 No Content`
-  좌석 / 구역 자원 해제
+  좌석 자원 해제
 
 ### FUNC-HOLD-004 중복 좌석 홀드 실패
 
@@ -393,9 +458,11 @@
 ### FUNC-HOLD-005 잘못된 아이템 요청 실패
 
 - 목적:
-  `seatId`와 `sectionId`를 동시에 보내거나 둘 다 비운 요청 검증
-- 기대 결과:
-  `400 Bad Request`
+  현재 지원하는 좌석 홀드 요청 형식 검증
+- 요청 / 기대 결과:
+  `items`가 비어 있거나 `showId`, `items[].seatId`가 누락/음수이면 `400 Bad Request`
+  존재하지 않는 `seatId`는 `400 Bad Request`
+  같은 요청 안의 중복 `seatId`는 `409 Conflict`
 
 ### FUNC-HOLD-006 만료 홀드 lazy release 확인
 
@@ -447,6 +514,15 @@
 - 기대 결과:
   상태가 `EXPIRED`로 바뀌고 자원이 해제된다.
 
+### FUNC-RES-005 예약 목록 상태 필터 실패
+
+- 목적:
+  `GET /api/me/reservations`의 status 필터 검증 확인
+- 요청:
+  유효하지 않은 `status` 쿼리로 목록 조회
+- 기대 결과:
+  `400 Bad Request`
+
 ### FUNC-PAY-001 결제 승인 성공
 
 - 목적:
@@ -478,6 +554,24 @@
 - 기대 결과:
   `409 Conflict`
 
+### FUNC-PAY-004 멱등키 재사용 충돌
+
+- 목적:
+  같은 `Idempotency-Key`를 다른 예약 또는 다른 금액 요청에 재사용하지 못하는지 확인
+- 요청:
+  이미 승인된 key와 다른 body로 `POST /api/payments/confirm`
+- 기대 결과:
+  `409 Conflict`
+
+### FUNC-PAY-005 결제 헤더 검증 실패
+
+- 목적:
+  결제 승인 API가 `Idempotency-Key` 헤더를 필수로 요구하는지 확인
+- 요청:
+  `Idempotency-Key` 없이 `POST /api/payments/confirm`
+- 기대 결과:
+  `400 Bad Request`
+
 ### FUNC-TKT-001 내 티켓 목록 조회
 
 - 목적:
@@ -507,6 +601,24 @@
   동일한 `qrToken`으로 재호출
 - 기대 결과:
   `409 Conflict`
+
+### FUNC-CHK-003 유효하지 않은 QR 토큰 실패
+
+- 목적:
+  존재하지 않는 `qrToken` 요청 처리 확인
+- 요청:
+  잘못된 `qrToken`으로 `POST /api/checkin`
+- 기대 결과:
+  `404 Not Found`
+
+### FUNC-CHK-004 일반 사용자 체크인 실패
+
+- 목적:
+  체크인 API의 관리자 권한 제한 확인
+- 요청:
+  USER 토큰으로 `POST /api/checkin`
+- 기대 결과:
+  `403 Forbidden`
 
 ## 권한 검증 시나리오
 
@@ -555,7 +667,7 @@
 ### 회귀 세트 C: 관리자 준비 흐름
 
 - 공연장 생성
-- 좌석 / 구역 등록
+- 구역 / 좌석 등록
 - 이벤트 생성
 - 회차 생성
 - 회차 인벤토리 생성

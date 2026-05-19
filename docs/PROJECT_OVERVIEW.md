@@ -53,8 +53,8 @@
 
 ## 판매 준비 흐름
 1. `Venue`를 생성하거나 수정한다.
-2. 공연장 기준 좌석은 `POST /api/admin/venues/{venueId}/seats`로 등록한다.
-3. 공연장 기준 구역은 `POST /api/admin/venues/{venueId}/sections`로 등록한다.
+2. 공연장 기준 구역은 `POST /api/admin/venues/{venueId}/sections`로 등록한다.
+3. 공연장 기준 좌석은 `POST /api/admin/venues/{venueId}/seats`로 등록한다.
 4. 필요하면 `GET /api/admin/venues`, `GET /api/admin/venues/{venueId}/seats`, `GET /api/admin/venues/{venueId}/sections`로 공연장과 기준정보 ID를 확인한다.
 5. `Event`를 생성하고, 그 아래에 `Show`를 생성한다.
 6. 회차별 판매 좌석은 `POST /api/admin/shows/{showId}/show-seats`로 생성한다.
