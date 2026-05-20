@@ -114,7 +114,7 @@ docker run --rm `
 ```
 
 이 시나리오의 기대 결과는 `hold_success=1`, `hold_rejected=99`, `hold_unexpected=0`이다.
-`hold_rejected`는 좌석 충돌 `409`와 fast-fail `429`를 합친 값이다.
+`hold_rejected`는 좌석별 queue 초과, Redis pre-lock 충돌, DB 상태 충돌처럼 최종적으로 선점에 실패한 요청을 합친 값이다. 현재 queue 초과와 pre-lock 충돌은 모두 `409 Conflict`로 반환한다.
 실제 좌석 선점 동시성 smoke는 이 명령을 우선 사용한다.
 
 1000명 동일 좌석 Hold 순간 경쟁:
@@ -134,16 +134,40 @@ docker run --rm `
 ```
 
 이 시나리오의 기대 결과는 `hold_success=1`, `hold_rejected=999`, `hold_unexpected=0`이다.
-`hold_conflict`는 Redis/DB에서 이미 선점된 좌석으로 판단한 `409`이고, `hold_fast_fail`은 Hold API bulkhead에서 즉시 거절한 `429`이다.
-같은 좌석에 요청이 몰릴 때 Redis pre-lock이 추가 요청을 먼저 차단하고, 최종 정합성은 DB row lock/optimistic lock 충돌이 `409 Conflict`로 흘러가는지 확인한다.
+`hold_conflict`는 좌석별 queue, Redis pre-lock, DB 중 어느 단계든 이미 선점 경쟁에서 밀린 것으로 판단해 `409`로 실패한 수이다.
+같은 좌석에 요청이 몰릴 때 좌석별 queue가 순간 진입량을 제한하고, Redis pre-lock이 DB 진입 전 추가 요청을 먼저 차단하며, 최종 정합성은 DB row lock/optimistic lock이 보호하는지 확인한다.
 `SETUP_TIMEOUT`은 테스트 전 사용자 생성/로그인 준비 단계 제한 시간이고, `MAX_DURATION`은 실제 Hold 동시 요청 실행 단계 제한 시간이다.
 `SETUP_BATCH_SIZE`는 사용자 회원가입/로그인을 몇 개씩 묶어서 병렬 요청할지 정한다. 값을 키우면 준비 단계는 빨라질 수 있지만, BCrypt 해시/검증이 한꺼번에 실행되어 백엔드 CPU가 더 크게 튈 수 있다.
 `SETUP_SETTLE_SECONDS`는 사용자 준비 부하와 실제 Hold 경쟁 부하가 Grafana에서 섞이지 않도록 setup 종료 후 대기하는 시간이다.
 
+500 / 1000 / 3000 / 5000 / 10000명 정책 검증 매트릭스:
+
+```powershell
+$raceUsers = @(500, 1000, 3000, 5000, 10000)
+
+foreach ($users in $raceUsers) {
+  docker run --rm `
+    --network ticketing-lab-full_ticketing `
+    -v "$($PWD.Path)\backend\perf\k6:/scripts" `
+    -e BASE_URL=http://frontend:8080 `
+    -e RACE_USERS=$users `
+    -e MAX_DURATION=3m `
+    -e SETUP_TIMEOUT=15m `
+    -e SETUP_BATCH_SIZE=100 `
+    -e SETUP_SETTLE_SECONDS=20 `
+    -e K6_REPORT_DIR=/scripts/results `
+    -e K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write `
+    grafana/k6 run -o experimental-prometheus-rw /scripts/load/hold-seat-race.js
+}
+```
+
+위 매트릭스는 고유 사용자 토큰을 생성해 같은 좌석에 동시에 Hold를 시도한다. 로컬 PC에서 10000명까지 실행하면 부하 생성기, Docker Desktop, host network 한계가 먼저 드러날 수 있으므로, `10000명` 결과는 정상 응답률과 네트워크 오류 위치를 함께 봐야 한다.
+
 Redis pre-lock은 기본적으로 `HOLD_PRE_LOCK_ENABLED=true`, `HOLD_PRE_LOCK_TTL=60s`로 동작한다.
+좌석별 queue는 기본적으로 `HOLD_SEAT_QUEUE_ENABLED=true`, `HOLD_SEAT_QUEUE_MAX_PER_SEAT=100`, `HOLD_SEAT_QUEUE_TTL=30s`로 동작한다.
 Hold API fast-fail은 실험용 옵션이며 기본적으로 `HOLD_FAST_FAIL_ENABLED=false`, `HOLD_FAST_FAIL_MAX_CONCURRENT=50`으로 동작한다.
-Before/After 비교가 필요하면 `.env`에서 `HOLD_PRE_LOCK_ENABLED=false`로 내리고 백엔드를 재기동한 뒤 같은 k6 명령을 다시 실행한다.
-fast-fail 전후 비교가 필요하면 `.env`에서 `HOLD_FAST_FAIL_ENABLED=true`로 올리고 같은 방식으로 비교한다.
+Before/After 비교가 필요하면 `.env`에서 `HOLD_PRE_LOCK_ENABLED=false` 또는 `HOLD_SEAT_QUEUE_ENABLED=false`로 내리고 백엔드를 재기동한 뒤 같은 k6 명령을 다시 실행한다.
+fast-fail 전후 비교가 필요하면 `.env`에서 `HOLD_FAST_FAIL_ENABLED=true`로 올리고 같은 방식으로 비교한다. 다만 채택한 기본 정책은 fast-fail이 아니라 좌석별 queue + Redis pre-lock이다.
 
 결제 멱등성:
 
@@ -186,9 +210,9 @@ k6 콘솔에서 아래 값을 본다.
 - `checks`: 스크립트 검증 통과율
 - `availability_burst_ok`: 순간 유입 Burst에서 정상 응답한 요청 수
 - `hold_success`: 동일 좌석 Hold 성공 수. `1`이어야 한다.
-- `hold_conflict`: 동일 좌석 Hold 충돌 수. 좌석이 이미 선점되어 `409`로 실패한 수이다.
-- `hold_fast_fail`: Hold API fast-fail bulkhead에서 `429`로 즉시 거절한 수이다.
-- `hold_rejected`: `hold_conflict + hold_fast_fail` 성격의 최종 거절 수. `RACE_USERS - 1` 이상이어야 한다.
+- `hold_conflict`: 동일 좌석 Hold 충돌 수. 좌석별 queue 초과, Redis pre-lock 실패, DB 상태 충돌 등으로 `409` 실패한 수이다.
+- `hold_fast_fail`: Hold API fast-fail bulkhead에서 `429`로 즉시 거절한 수이다. 기본 채택 정책에서는 보통 `0`이어야 한다.
+- `hold_rejected`: `hold_conflict + hold_fast_fail` 성격의 최종 거절 수. 같은 좌석 1개 경쟁에서는 `RACE_USERS - 1` 이상이어야 한다.
 - `payment_approved`: 같은 멱등키 결제 성공 응답 수. `PAYMENT_REQUESTS`와 같아야 한다.
 - `ticket_count_ok`: 결제 멱등성 테스트 후 티켓이 1장만 발급됐는지 확인한다.
 
@@ -206,8 +230,8 @@ k6 콘솔에서 아래 값을 본다.
 - `ticketing_hold_fast_fail_in_use`: 현재 Hold API bulkhead에서 사용 중인 처리 슬롯 수이다.
 
 동일 좌석 1000명 경쟁에서 `hold_success=1`, `hold_rejected=999`, `hold_unexpected=0`이면서 `PostgreSQL Tuple Lock Waits Peak`가 `1` 이상이면, 정합성은 맞고 병목은 같은 좌석 row lock 경합으로 해석한다.
-Redis pre-lock 적용 후에는 같은 시나리오에서 `PostgreSQL Tuple Lock Waits Peak`, `Hikari Pending Connections`, `Hikari Pool Usage`가 내려가고 `Redis Commands`가 올라가는지 비교한다.
-Spring fast-fail 적용 후에는 `hold_fast_fail`과 `ticketing_hold_fast_fail_rejected_total`이 올라가는 대신 Redis/DB 지표가 더 안정되는지 확인한다. 다만 3000명 이상 순간 유입은 Spring 내부보다 Nginx/API Gateway/admission service 계층에서 먼저 제어하는 방향을 우선 검증한다.
+좌석별 queue + Redis pre-lock 적용 후에는 같은 시나리오에서 `PostgreSQL Tuple Lock Waits Peak`, `Hikari Pending Connections`, `Hikari Pool Usage`가 내려가고 `Redis Commands`가 올라가는지 비교한다.
+Spring fast-fail 적용 후에는 `hold_fast_fail`과 `ticketing_hold_fast_fail_rejected_total`이 올라가는 대신 Redis/DB 지표가 더 안정되는지 확인한다. 다만 현재 채택한 1차 보호선은 좌석별 queue + Redis pre-lock이고, 3000명 이상 순간 유입의 추가 방어선은 Nginx/API Gateway/admission service에서 검증한다.
 
 ## 실행 리포트
 

@@ -12,6 +12,7 @@
 - 인벤토리 모델: `지정형 Seat` 우선, `Section 수량형` 확장 지원
 - 아키텍처: 모놀리식 `Spring MVC`
 - 목적: 예매 도메인의 상태 전이, 재고 보호, 결제 멱등성, 체크인 흐름을 일관된 모델로 검증
+- 채택한 좌석 선점 전략: `좌석별 요청 큐 제한 + Redis pre-lock + DB 최종 정합성 보호`
 
 ## 프로젝트 목적
 
@@ -71,6 +72,28 @@ Show -> Hold -> Reservation -> Payment -> Ticket -> Check-in
 - Reservation: `PENDING_PAYMENT -> PAID | CANCELED | EXPIRED`
 - Payment: `REQUESTED -> APPROVED | FAILED`
 - Ticket: `ISSUED -> USED | CANCELED(optional)`
+
+## 좌석 선점 전략
+
+현재 채택한 Hold 생성 전략은 `좌석별 요청 큐 제한 + Redis pre-lock` 조합입니다.
+
+한 좌석에 요청이 몰릴 때 모든 요청을 DB lock까지 보내면 정합성은 지킬 수 있지만 응답 지연과 lock 경합이 커집니다. 이 프로젝트는 먼저 좌석별 요청 큐로 순간 진입량을 제한하고, 그 다음 Redis pre-lock으로 이미 선점 가능성이 낮은 요청을 빠르게 탈락시킨 뒤, 마지막으로 DB row lock과 `@Version`으로 최종 정합성을 보장합니다.
+
+처리 순서는 아래와 같습니다.
+
+```text
+Hold 요청
+  -> 좌석별 queue 진입
+  -> Redis pre-lock 획득
+  -> DB row lock / 도메인 상태 검증
+  -> Hold 저장
+  -> transaction commit 후 pre-lock 확정
+  -> queue 슬롯 반환
+```
+
+기본 queue 제한은 좌석당 인증 요청 슬롯 100개입니다. 이번 부하 테스트에서 사용한 `5000명 완전동시 요청`은 엄밀히 말해 1ms 안에 서버에 5000개 요청이 도착했다는 뜻이 아니라, 부하 생성기가 동시에 요청을 출발시킨 burst 조건입니다. 운영 지표로는 `1ms 내 5000건`보다 `같은 좌석에 5000개 burst 요청이 들어와도 1건만 성공하고 나머지는 빠르게 명확한 실패로 반환되는가`를 기준으로 봅니다.
+
+정책 비교와 판단 근거는 [docs/HOLD_POLICY_LOAD_TEST_REPORT.md](docs/HOLD_POLICY_LOAD_TEST_REPORT.md)에 정리했습니다.
 
 ## 아키텍처 방향
 
@@ -204,10 +227,11 @@ jwt:
 다만 백엔드의 방향성을 보여주는 핵심 포인트는 아래와 같습니다.
 
 - 성능: 공개 조회 API, 홀드 생성, 예약 전환, 결제 멱등성을 중심으로 부하 시나리오를 설계하고 있습니다.
+- Hold 폭주 보호: 동일 좌석 선점 경쟁은 좌석별 queue와 Redis pre-lock을 함께 사용하고, DB lock은 최종 정합성 보호선으로 유지합니다.
 - 고가용성: JWT 기반 stateless 확장성, 다중 인스턴스 배치, DB 병목 완화 전략을 다음 단계로 검토합니다.
 - 로그/관측성: `traceId`, 공통 에러 응답, 구조화 로그, 운영 추적 체계를 후속 과제로 관리합니다.
 
-이 영역의 상세 계획은 [docs/PERFORMANCE_TEST_PLAN.md](docs/PERFORMANCE_TEST_PLAN.md), [docs/REQUIREMENTS_BACKLOG.md](docs/REQUIREMENTS_BACKLOG.md)에서 확인할 수 있습니다.
+이 영역의 상세 계획은 [docs/PERFORMANCE_TEST_PLAN.md](docs/PERFORMANCE_TEST_PLAN.md), [docs/HOLD_POLICY_LOAD_TEST_REPORT.md](docs/HOLD_POLICY_LOAD_TEST_REPORT.md), [docs/REQUIREMENTS_BACKLOG.md](docs/REQUIREMENTS_BACKLOG.md)에서 확인할 수 있습니다.
 
 ## 문서 바로가기
 
@@ -217,6 +241,7 @@ jwt:
 - [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md): 실행 환경과 프로필 설명
 - [docs/FUNCTIONAL_TEST_SCENARIOS.md](docs/FUNCTIONAL_TEST_SCENARIOS.md): 일반 기능 검증 시나리오
 - [docs/PERFORMANCE_TEST_PLAN.md](docs/PERFORMANCE_TEST_PLAN.md): 성능/트래픽 테스트 도구, 절차, 시나리오
+- [docs/HOLD_POLICY_LOAD_TEST_REPORT.md](docs/HOLD_POLICY_LOAD_TEST_REPORT.md): 좌석 선점 정책 비교, 부하 테스트 결과, 채택 근거
 
 ## 테스트 실행
 
@@ -226,7 +251,7 @@ jwt:
 ./gradlew.bat test
 ```
 
-일반 기능 검증 시나리오는 [docs/FUNCTIONAL_TEST_SCENARIOS.md](docs/FUNCTIONAL_TEST_SCENARIOS.md), 성능/트래픽 테스트 계획은 [docs/PERFORMANCE_TEST_PLAN.md](docs/PERFORMANCE_TEST_PLAN.md)에 정리했습니다.
+일반 기능 검증 시나리오는 [docs/FUNCTIONAL_TEST_SCENARIOS.md](docs/FUNCTIONAL_TEST_SCENARIOS.md), 성능/트래픽 테스트 계획은 [docs/PERFORMANCE_TEST_PLAN.md](docs/PERFORMANCE_TEST_PLAN.md)에 정리했습니다. 동일 좌석 Hold 경쟁과 정책 비교 결과는 [docs/HOLD_POLICY_LOAD_TEST_REPORT.md](docs/HOLD_POLICY_LOAD_TEST_REPORT.md)를 함께 봅니다.
 
 ## Docker Compose 실행
 

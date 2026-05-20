@@ -42,6 +42,10 @@ app:
     pre-lock:
       enabled: false
       ttl: 60s
+    seat-queue:
+      enabled: false
+      max-per-seat: 100
+      ttl: 30s
     fast-fail:
       enabled: false
       max-concurrent: 50

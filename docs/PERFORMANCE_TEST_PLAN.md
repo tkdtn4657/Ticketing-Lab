@@ -403,12 +403,53 @@ k6 run .\perf\k6\load\hold-seat-race.js
 
 - 회차 가용성 조회는 읽기 폭주 시 첫 번째 병목 후보다.
 - 홀드 / 예약 / 결제는 정합성 보호를 위해 락이 걸리는 구간이므로 lock wait를 꼭 봐야 한다.
-- 동일 좌석 Hold 경쟁은 Redis pre-lock으로 DB 진입 전 중복 요청을 먼저 차단하고, DB row lock과 `@Version`은 최종 정합성 보호선으로 유지한다.
-- Hold API fast-fail bulkhead는 실험용 보조 보호선이다. 순간 처리 슬롯이 꽉 찼을 때 `429 Too Many Requests`를 반환하지만, Spring 내부 필터 위치상 Nginx/Tomcat 앞단 큐를 줄이지는 못한다.
-- Redis pre-lock 효과는 적용 전후의 PostgreSQL tuple lock peak, Hikari pending/usage, Redis command 증가를 함께 비교한다.
-- fast-fail 효과는 `hold_fast_fail`, `ticketing_hold_fast_fail_rejected_total`, Redis command 수, backend latency를 함께 비교하되, 대규모 순간 유입의 1차 방어선은 Nginx/API Gateway/admission service에서 검증한다.
+- 동일 좌석 Hold 경쟁은 좌석별 queue로 순간 진입량을 제한하고, Redis pre-lock으로 DB 진입 전 중복 요청을 먼저 차단한다. DB row lock과 `@Version`은 최종 정합성 보호선으로 유지한다.
+- Hold API fast-fail bulkhead는 실험용 보조 보호선이다. 순간 처리 슬롯이 꽉 찼을 때 `429 Too Many Requests`를 반환하지만, Spring 내부 필터 위치상 Nginx/Tomcat 앞단 큐를 줄이지는 못한다. 현재 채택한 기본 정책은 좌석별 queue + Redis pre-lock이다.
+- 좌석별 queue + Redis pre-lock 효과는 적용 전후의 PostgreSQL tuple lock peak, Hikari pending/usage, Redis command 증가, backend latency, 정상 응답률을 함께 비교한다.
+- fast-fail 효과는 `hold_fast_fail`, `ticketing_hold_fast_fail_rejected_total`, Redis command 수, backend latency를 함께 비교하되, 대규모 순간 유입의 추가 방어선은 Nginx/API Gateway/admission service에서 검증한다.
 - 결제 멱등성은 정상 재시도뿐 아니라 경쟁 상황에서도 같은 결과를 유지하는지 확인해야 한다.
 - Hold / Reservation 만료 해제는 lazy release 중심이므로 만료 자원이 많은 상황에서 조회/생성 API에 어떤 추가 비용이 붙는지 봐야 한다.
+
+## 동일 좌석 Hold 채택 정책 판단
+
+현재 채택 후보는 `좌석별 queue + Redis pre-lock`이다. 정책 비교 결과는 [HOLD_POLICY_LOAD_TEST_REPORT.md](HOLD_POLICY_LOAD_TEST_REPORT.md)에 별도로 정리했다.
+
+### 5000건 동시요청 해석
+
+성능 목표를 말할 때 `1ms 이내 5000건`이라는 표현은 조심해서 사용한다. 이것은 수치상 초당 500만 요청에 해당하며, 단일 로컬 PC나 단일 WAS 인스턴스의 애플리케이션 처리량 목표로 보기 어렵다.
+
+이번 테스트에서 확인한 것은 `부하 생성기가 5000개 요청을 거의 동시에 출발시키는 burst 조건`이다. 실제 서버 도착 시점은 OS 스케줄링, TCP 연결, Docker NAT, nginx proxy, Tomcat accept queue에 의해 몇 ms에서 수 초까지 퍼질 수 있다.
+
+따라서 이 프로젝트의 1차 목표는 다음처럼 정의한다.
+
+```text
+같은 좌석 1개에 5000개 burst 요청이 몰렸을 때
+정확히 1건만 Hold 생성에 성공하고,
+나머지는 5xx나 무응답이 아니라 빠른 409로 명확히 실패한다.
+```
+
+이 목표는 `큐 제한 + pre-lock` 방식으로 이번 로컬 테스트에서 가장 잘 만족했다. 다만 10000명 구간은 네트워크 오류가 대량 발생했으므로, 단일 로컬 환경의 한계를 넘는 검증은 분산 부하 생성 환경에서 다시 측정해야 한다.
+
+### 채택 이유
+
+- main 방식은 정합성은 가능하지만 DB lock 경합과 tail latency가 크다.
+- 좌석별 queue 단독은 앞단 진입량을 제한해도 DB lock 병목을 제거하지 못한다.
+- Redis pre-lock 단독은 500~3000명 구간에서 가장 빠르지만, 5000명 이상 순간 폭주에서는 앞단 admission control이 부족할 수 있다.
+- 좌석별 queue + Redis pre-lock은 성공 가능성이 낮은 요청을 DB 전에 빠르게 탈락시키고, DB에는 실제 성공 가능성이 있는 극소수만 진입시킨다.
+
+### 추가 대안
+
+채택 정책만으로 끝내지 말고, 트래픽 규모가 커질수록 아래 대안을 단계적으로 검토한다.
+
+| 대안 | 기대 효과 | 주의점 |
+| --- | --- | --- |
+| WAS scale-out | 전체 HTTP 처리량과 비좌석 API 처리 여유 증가 | 동일 좌석 정합성은 Redis/DB 같은 공유 보호선이 계속 필요 |
+| Redis Cluster 또는 별도 Redis admission 계층 | 좌석별 queue/pre-lock 부하 분산 | Lua script key 설계와 hash tag 일관성 필요 |
+| Nginx/API Gateway rate limit | Tomcat 도달 전 폭주 완화 | 좌석 ID 단위 정책을 넣기 어렵고 사용자별 공정성 설계 필요 |
+| 대기열/Waiting Room | 오픈 직후 전체 유입량을 서비스 처리량에 맞춰 평탄화 | UX 설계와 순번 공정성 검증 필요 |
+| 좌석별 낙관적 즉시 실패 UX | 이미 경쟁이 과열된 좌석을 빠르게 실패 처리 | 사용자가 불공정하다고 느끼지 않도록 메시지와 재시도 흐름 필요 |
+| 좌석 선택 전 availability push/SSE | 이미 선점된 좌석 클릭을 줄임 | 실시간성, fan-out 비용, 모바일 배터리 고려 필요 |
+| show 단위 shard/파티셔닝 | 대형 이벤트 간 DB/Redis hot spot 분리 | 운영 복잡도 증가 |
 
 ## 테스트 결과 문서화 규칙
 

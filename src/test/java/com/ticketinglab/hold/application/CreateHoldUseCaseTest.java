@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,6 +39,7 @@ class CreateHoldUseCaseTest {
     private static final Long SHOW_ID = 10L;
     private static final Long SEAT_ID = 100L;
     private static final Duration PRE_LOCK_TTL = Duration.ofSeconds(60);
+    private static final Duration SEAT_QUEUE_TTL = Duration.ofSeconds(30);
 
     @Mock
     private ShowRepository showRepository;
@@ -54,6 +56,9 @@ class CreateHoldUseCaseTest {
     @Mock
     private SeatHoldPreLockManager seatHoldPreLockManager;
 
+    @Mock
+    private SeatHoldQueueManager seatHoldQueueManager;
+
     private CreateHoldUseCase useCase;
 
     @BeforeEach
@@ -63,17 +68,41 @@ class CreateHoldUseCaseTest {
                 holdRepository,
                 holdResourceManager,
                 reservationResourceManager,
-                seatHoldPreLockManager
+                seatHoldPreLockManager,
+                seatHoldQueueManager
         );
         ReflectionTestUtils.setField(useCase, "holdTtlMinutes", 5L);
         ReflectionTestUtils.setField(useCase, "preLockTtl", PRE_LOCK_TTL);
+        ReflectionTestUtils.setField(useCase, "seatQueueTtl", SEAT_QUEUE_TTL);
+    }
+
+    @Test
+    @DisplayName("좌석별 큐가 가득 차면 pre-lock과 DB 자원 잠금 전에 409로 실패한다")
+    void execute_queueFull_shortCircuitsBeforePreLockAndDatabaseResourceLock() {
+        CreateHoldRequest request = request(SEAT_ID);
+
+        when(seatHoldQueueManager.tryEnter(eq(SHOW_ID), eq(Set.of(SEAT_ID)), eq(USER_ID), eq(SEAT_QUEUE_TTL)))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> useCase.execute(USER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(exception -> assertThat(((ResponseStatusException) exception).getStatusCode())
+                        .isEqualTo(CONFLICT));
+
+        verify(seatHoldPreLockManager, never()).acquire(any(), any(), any());
+        verify(showRepository, never()).findById(any());
+        verify(reservationResourceManager, never()).expirePendingReservations(any(), any(), any());
+        verify(holdResourceManager, never()).prepareForCreate(any(), any(), any());
+        verify(holdRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("Redis pre-lock 충돌이면 DB 자원 잠금 전에 409로 실패한다")
     void execute_preLockConflict_shortCircuitsBeforeDatabaseResourceLock() {
         CreateHoldRequest request = request(SEAT_ID);
+        SeatHoldQueueTicket queueTicket = queueTicket();
 
+        stubQueueEnter(queueTicket);
         when(seatHoldPreLockManager.acquire(eq(SHOW_ID), eq(Set.of(SEAT_ID)), eq(PRE_LOCK_TTL)))
                 .thenReturn(Optional.empty());
 
@@ -86,14 +115,17 @@ class CreateHoldUseCaseTest {
         verify(reservationResourceManager, never()).expirePendingReservations(any(), any(), any());
         verify(holdResourceManager, never()).prepareForCreate(any(), any(), any());
         verify(holdRepository, never()).save(any());
+        verify(seatHoldQueueManager).leave(queueTicket);
     }
 
     @Test
     @DisplayName("Redis pre-lock 이후 show 검증에 실패하면 attempt pre-lock을 정리한다")
     void execute_showNotFound_releasesAttemptPreLock() {
         CreateHoldRequest request = request(SEAT_ID);
+        SeatHoldQueueTicket queueTicket = queueTicket();
         SeatHoldPreLock preLock = SeatHoldPreLock.acquire(SHOW_ID, List.of(SEAT_ID), "attempt:test");
 
+        stubQueueEnter(queueTicket);
         when(seatHoldPreLockManager.acquire(eq(SHOW_ID), eq(Set.of(SEAT_ID)), eq(PRE_LOCK_TTL)))
                 .thenReturn(Optional.of(preLock));
         when(showRepository.findById(SHOW_ID)).thenReturn(Optional.empty());
@@ -104,6 +136,7 @@ class CreateHoldUseCaseTest {
         verify(seatHoldPreLockManager).release(preLock);
         verify(reservationResourceManager, never()).expirePendingReservations(any(), any(), any());
         verify(holdResourceManager, never()).prepareForCreate(any(), any(), any());
+        verify(seatHoldQueueManager).leave(queueTicket);
     }
 
     @Test
@@ -111,8 +144,10 @@ class CreateHoldUseCaseTest {
     void execute_databaseFailure_releasesAttemptPreLock() {
         Show show = show();
         CreateHoldRequest request = request(SEAT_ID);
+        SeatHoldQueueTicket queueTicket = queueTicket();
         SeatHoldPreLock preLock = SeatHoldPreLock.acquire(SHOW_ID, List.of(SEAT_ID), "attempt:test");
 
+        stubQueueEnter(queueTicket);
         when(showRepository.findById(SHOW_ID)).thenReturn(Optional.of(show));
         when(seatHoldPreLockManager.acquire(eq(SHOW_ID), eq(Set.of(SEAT_ID)), eq(PRE_LOCK_TTL)))
                 .thenReturn(Optional.of(preLock));
@@ -123,6 +158,7 @@ class CreateHoldUseCaseTest {
                 .isInstanceOf(ResponseStatusException.class);
 
         verify(seatHoldPreLockManager).release(preLock);
+        verify(seatHoldQueueManager).leave(queueTicket);
     }
 
     @Test
@@ -131,8 +167,10 @@ class CreateHoldUseCaseTest {
         Show show = show();
         ShowSeat showSeat = showSeat();
         CreateHoldRequest request = request(SEAT_ID);
+        SeatHoldQueueTicket queueTicket = queueTicket();
         SeatHoldPreLock preLock = SeatHoldPreLock.acquire(SHOW_ID, List.of(SEAT_ID), "attempt:test");
 
+        stubQueueEnter(queueTicket);
         when(showRepository.findById(SHOW_ID)).thenReturn(Optional.of(show));
         when(seatHoldPreLockManager.acquire(eq(SHOW_ID), eq(Set.of(SEAT_ID)), eq(PRE_LOCK_TTL)))
                 .thenReturn(Optional.of(preLock));
@@ -142,7 +180,11 @@ class CreateHoldUseCaseTest {
 
         useCase.execute(USER_ID, request);
 
+        var inOrder = inOrder(seatHoldQueueManager, seatHoldPreLockManager);
+        inOrder.verify(seatHoldQueueManager).tryEnter(eq(SHOW_ID), eq(Set.of(SEAT_ID)), eq(USER_ID), eq(SEAT_QUEUE_TTL));
+        inOrder.verify(seatHoldPreLockManager).acquire(eq(SHOW_ID), eq(Set.of(SEAT_ID)), eq(PRE_LOCK_TTL));
         verify(seatHoldPreLockManager).confirmHold(eq(preLock), any(), eq(PRE_LOCK_TTL));
+        verify(seatHoldQueueManager).leave(queueTicket);
     }
 
     private Show show() {
@@ -159,5 +201,14 @@ class CreateHoldUseCaseTest {
 
     private CreateHoldRequest request(Long seatId) {
         return new CreateHoldRequest(SHOW_ID, List.of(new CreateHoldRequest.Item(seatId)));
+    }
+
+    private void stubQueueEnter(SeatHoldQueueTicket queueTicket) {
+        when(seatHoldQueueManager.tryEnter(eq(SHOW_ID), eq(Set.of(SEAT_ID)), eq(USER_ID), eq(SEAT_QUEUE_TTL)))
+                .thenReturn(Optional.of(queueTicket));
+    }
+
+    private SeatHoldQueueTicket queueTicket() {
+        return new SeatHoldQueueTicket(SHOW_ID, Set.of(SEAT_ID), "queue:test");
     }
 }

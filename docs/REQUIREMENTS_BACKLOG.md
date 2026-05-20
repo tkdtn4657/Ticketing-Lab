@@ -25,7 +25,7 @@
 | View | REQ-VIEW-002 | 회차 가용성 조회 | show 기준 좌석 available 및 좌석별 구역 정보 제공 | P0 | 구현완료 | SHW-001 |
 | Hold | REQ-HOLD-001 | 홀드 생성 | show 기준 좌석 홀드 생성 | P0 | 구현완료 | items는 `seatId` 기준 |
 | Hold | REQ-HOLD-002 | Hold TTL 만료 | 5분 TTL, 만료 자동 해제 | P0 | 구현완료 | create/get/delete/availability + scheduler release |
-| Hold | REQ-HOLD-003 | 동시성 안전성 | 좌석 중복 홀드 불가 | P0 | 진행중 | Redis pre-lock + 요청 좌석 기준 row lock + `@Version` 적용. Spring fast-fail은 실험용 보조 보호선 |
+| Hold | REQ-HOLD-003 | 동시성 안전성 | 좌석 중복 홀드 불가 | P0 | 구현완료 | 좌석별 queue + Redis pre-lock 채택. DB row lock + `@Version`은 최종 정합성 보호선, Spring fast-fail은 실험용 보조 보호선 |
 | Hold | REQ-HOLD-004 | 홀드 조회/취소 | 본인 hold 조회 및 취소 | P0 | 구현완료 | 만료 조회 시 EXPIRED 반영 |
 | Reservation | REQ-RES-001 | 예약 생성 | hold_items를 reservation_items로 복사 | P0 | 구현완료 | hold -> reservation 전환 및 자원 유지 |
 | Reservation | REQ-RES-002 | 예약 상태 관리 | `PENDING_PAYMENT -> PAID`, 만료/취소 포함 | P0 | 구현완료 | `PAID`, `EXPIRED`, `CANCELED` 자원 해제 |

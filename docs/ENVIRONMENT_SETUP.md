@@ -67,6 +67,26 @@ docker compose up --build
 - refresh 성공 시 기존 refresh token 세션은 새 access/refresh token 세션으로 원자적으로 교체된다.
 - Access Token 만료 시간은 5시간, Refresh Token 만료 시간과 Redis 세션 TTL은 14일이다.
 
+## Hold 좌석 선점 보호 설정
+
+동일 좌석에 요청이 몰릴 때는 좌석별 queue와 Redis pre-lock을 함께 사용한다.
+
+기본값은 아래와 같다.
+
+| 환경변수 | 기본값 | 설명 |
+| --- | --- | --- |
+| `HOLD_SEAT_QUEUE_ENABLED` | `true` | 좌석별 요청 queue 사용 여부 |
+| `HOLD_SEAT_QUEUE_MAX_PER_SEAT` | `100` | 좌석 하나에 동시에 진입 가능한 요청 슬롯 수 |
+| `HOLD_SEAT_QUEUE_TTL` | `30s` | queue 슬롯이 비정상 종료 시 자동 해제되는 시간 |
+| `HOLD_PRE_LOCK_ENABLED` | `true` | Redis pre-lock 사용 여부 |
+| `HOLD_PRE_LOCK_TTL` | `60s` | pre-lock TTL |
+| `HOLD_FAST_FAIL_ENABLED` | `false` | 실험용 Spring fast-fail bulkhead 사용 여부 |
+| `HOLD_FAST_FAIL_MAX_CONCURRENT` | `50` | fast-fail 사용 시 Hold 생성 동시 처리 슬롯 수 |
+
+채택한 기본 정책은 `HOLD_SEAT_QUEUE_ENABLED=true`와 `HOLD_PRE_LOCK_ENABLED=true` 조합이다. `HOLD_FAST_FAIL_ENABLED`는 이전 실험용 보조 보호선이므로 기본값을 `false`로 둔다.
+
+테스트 프로필에서는 외부 Redis 의존성을 줄이기 위해 pre-lock과 queue를 비활성화하고, 필요한 단위 테스트에서는 mock으로 동작을 검증한다.
+
 ## Swagger / OpenAPI 확인 경로
 - Swagger UI: `/docs/swagger-ui.html`
 - OpenAPI JSON: `/docs/api-docs`
