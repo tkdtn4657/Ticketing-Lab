@@ -10,11 +10,13 @@ import com.ticketinglab.reservation.application.ReservationResourceManager;
 import com.ticketinglab.show.domain.ShowSeat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -24,6 +26,7 @@ import java.util.Set;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
 @Service
 @RequiredArgsConstructor
@@ -33,16 +36,30 @@ public class CreateHoldUseCase {
     private final HoldRepository holdRepository;
     private final HoldResourceManager holdResourceManager;
     private final ReservationResourceManager reservationResourceManager;
+    private final SeatHoldQueueManager seatHoldQueueManager;
 
     @Value("${app.hold.ttl-minutes:5}")
     private long holdTtlMinutes;
 
+    @Value("${app.hold.seat-queue.ttl:30s}")
+    private Duration seatQueueTtl;
+
     @Transactional
     public CreateHoldResponse execute(Long userId, CreateHoldRequest request) {
-        Show show = showRepository.findById(request.showId())
+        RequestedItems requestedItems = normalize(request.items());
+        SeatHoldQueueTicket queueTicket = enterSeatQueue(request.showId(), requestedItems.seatIds(), userId);
+
+        try {
+            return createHold(userId, request.showId(), requestedItems);
+        } finally {
+            leaveSeatQueue(queueTicket);
+        }
+    }
+
+    private CreateHoldResponse createHold(Long userId, Long showId, RequestedItems requestedItems) {
+        Show show = showRepository.findById(showId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "show not found"));
 
-        RequestedItems requestedItems = normalize(request.items());
         LocalDateTime now = LocalDateTime.now();
 
         reservationResourceManager.expirePendingReservations(
@@ -67,6 +84,22 @@ public class CreateHoldUseCase {
             return new CreateHoldResponse(savedHold.getId(), savedHold.getExpiresAt());
         } catch (OptimisticLockingFailureException exception) {
             throw new ResponseStatusException(CONFLICT, "seat not available", exception);
+        }
+    }
+
+    private SeatHoldQueueTicket enterSeatQueue(Long showId, Set<Long> seatIds, Long userId) {
+        try {
+            return seatHoldQueueManager.tryEnter(showId, seatIds, userId, seatQueueTtl)
+                    .orElseThrow(() -> new ResponseStatusException(CONFLICT, "seat request queue full"));
+        } catch (DataAccessException exception) {
+            throw new ResponseStatusException(SERVICE_UNAVAILABLE, "seat request queue unavailable", exception);
+        }
+    }
+
+    private void leaveSeatQueue(SeatHoldQueueTicket queueTicket) {
+        try {
+            seatHoldQueueManager.leave(queueTicket);
+        } catch (DataAccessException ignored) {
         }
     }
 

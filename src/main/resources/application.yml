@@ -82,6 +82,10 @@ app:
       max-sessions-per-user: ${TOKEN_SESSION_MAX_SESSIONS_PER_USER:5}
   hold:
     ttl-minutes: 5
+    seat-queue:
+      enabled: ${HOLD_SEAT_QUEUE_ENABLED:true}
+      max-per-seat: ${HOLD_SEAT_QUEUE_MAX_PER_SEAT:100}
+      ttl: ${HOLD_SEAT_QUEUE_TTL:30s}
   reservation:
     ttl-minutes: 15
   expiration:
