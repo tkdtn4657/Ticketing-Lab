@@ -163,6 +163,30 @@ foreach ($users in $raceUsers) {
 
 위 매트릭스는 고유 사용자 토큰을 생성해 같은 좌석에 동시에 Hold를 시도한다. 로컬 PC에서 10000명까지 실행하면 부하 생성기, Docker Desktop, host network 한계가 먼저 드러날 수 있으므로, `10000명` 결과는 정상 응답률과 네트워크 오류 위치를 함께 봐야 한다.
 
+샤드형 동일 좌석 Hold 경쟁:
+
+단일 k6 Docker 컨테이너가 3000 VU 이상에서 먼저 한계에 닿으면 여러 k6 컨테이너로 부하 생성기를 나눌 수 있다. 이때 각 컨테이너가 fixture를 따로 만들면 같은 좌석 경쟁이 아니므로, 반드시 같은 `SHOW_ID`, `SEAT_ID`, `START_AT_EPOCH_MS`를 공유해야 한다.
+
+샤드용 스크립트는 아래 파일이다.
+
+```text
+backend/perf/k6/load/hold-seat-race-shard.js
+```
+
+워크스페이스 루트의 helper를 쓰면 공통 fixture 생성, shard별 k6 Docker 실행, 공통 시작 시각 전달을 한 번에 처리한다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\.loadtest\Invoke-K6HoldRaceSharded.ps1 `
+  -TotalUsers 5000 `
+  -Shards 5 `
+  -StartDelaySeconds 300 `
+  -SetupBatchSize 100 `
+  -SetupTimeout 30m `
+  -MaxDuration 5m
+```
+
+이 예시는 5개 k6 컨테이너가 각각 1000 VU를 준비한 뒤 같은 좌석을 동시에 요청한다. Docker Desktop 전체 메모리가 부족하면 shard 수를 늘려도 전체 실행은 실패할 수 있다. 로컬 Docker Desktop 메모리는 최소 8GB, 가능하면 16GB 이상을 권장한다.
+
 Redis pre-lock은 기본적으로 `HOLD_PRE_LOCK_ENABLED=true`, `HOLD_PRE_LOCK_TTL=60s`로 동작한다.
 좌석별 queue는 기본적으로 `HOLD_SEAT_QUEUE_ENABLED=true`, `HOLD_SEAT_QUEUE_MAX_PER_SEAT=100`, `HOLD_SEAT_QUEUE_TTL=30s`로 동작한다.
 Hold API fast-fail은 실험용 옵션이며 기본적으로 `HOLD_FAST_FAIL_ENABLED=false`, `HOLD_FAST_FAIL_MAX_CONCURRENT=50`으로 동작한다.
