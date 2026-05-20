@@ -242,6 +242,7 @@ jwt:
 - [docs/FUNCTIONAL_TEST_SCENARIOS.md](docs/FUNCTIONAL_TEST_SCENARIOS.md): 일반 기능 검증 시나리오
 - [docs/PERFORMANCE_TEST_PLAN.md](docs/PERFORMANCE_TEST_PLAN.md): 성능/트래픽 테스트 도구, 절차, 시나리오
 - [docs/HOLD_POLICY_LOAD_TEST_REPORT.md](docs/HOLD_POLICY_LOAD_TEST_REPORT.md): 좌석 선점 정책 비교, 부하 테스트 결과, 채택 근거
+- [docs/HOLD_POLICY_K6_RETEST_REPORT.md](docs/HOLD_POLICY_K6_RETEST_REPORT.md): k6 기준 재측정 결과와 3000 VU 이상 로컬 한계
 
 ## 테스트 실행
 
