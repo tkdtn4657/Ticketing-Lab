@@ -41,6 +41,7 @@ public class CreateHoldUseCase {
     private final HoldResourceManager holdResourceManager;
     private final ReservationResourceManager reservationResourceManager;
     private final SeatHoldPreLockManager seatHoldPreLockManager;
+    private final SeatHoldQueueManager seatHoldQueueManager;
 
     @Value("${app.hold.ttl-minutes:5}")
     private long holdTtlMinutes;
@@ -48,15 +49,28 @@ public class CreateHoldUseCase {
     @Value("${app.hold.pre-lock.ttl:60s}")
     private Duration preLockTtl;
 
+    @Value("${app.hold.seat-queue.ttl:30s}")
+    private Duration seatQueueTtl;
+
     @Transactional
     public CreateHoldResponse execute(Long userId, CreateHoldRequest request) {
         RequestedItems requestedItems = normalize(request.items());
+        SeatHoldQueueTicket queueTicket = enterSeatQueue(request.showId(), requestedItems.seatIds(), userId);
+
+        try {
+            return createHold(userId, request.showId(), requestedItems);
+        } finally {
+            leaveSeatQueue(queueTicket);
+        }
+    }
+
+    private CreateHoldResponse createHold(Long userId, Long showId, RequestedItems requestedItems) {
         LocalDateTime now = LocalDateTime.now();
-        SeatHoldPreLock preLock = acquirePreLock(request.showId(), requestedItems.seatIds());
+        SeatHoldPreLock preLock = acquirePreLock(showId, requestedItems.seatIds());
         boolean preLockHandledByTransaction = false;
 
         try {
-            Show show = showRepository.findById(request.showId())
+            Show show = showRepository.findById(showId)
                     .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "show not found"));
 
             reservationResourceManager.expirePendingReservations(
@@ -142,6 +156,22 @@ public class CreateHoldUseCase {
                     preLock.seatIds(),
                     exception
             );
+        }
+    }
+
+    private SeatHoldQueueTicket enterSeatQueue(Long showId, Set<Long> seatIds, Long userId) {
+        try {
+            return seatHoldQueueManager.tryEnter(showId, seatIds, userId, seatQueueTtl)
+                    .orElseThrow(() -> new ResponseStatusException(CONFLICT, "seat request queue full"));
+        } catch (DataAccessException exception) {
+            throw new ResponseStatusException(SERVICE_UNAVAILABLE, "seat request queue unavailable", exception);
+        }
+    }
+
+    private void leaveSeatQueue(SeatHoldQueueTicket queueTicket) {
+        try {
+            seatHoldQueueManager.leave(queueTicket);
+        } catch (DataAccessException ignored) {
         }
     }
 

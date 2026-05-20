@@ -87,6 +87,10 @@ app:
     pre-lock:
       enabled: ${HOLD_PRE_LOCK_ENABLED:true}
       ttl: ${HOLD_PRE_LOCK_TTL:60s}
+    seat-queue:
+      enabled: ${HOLD_SEAT_QUEUE_ENABLED:true}
+      max-per-seat: ${HOLD_SEAT_QUEUE_MAX_PER_SEAT:100}
+      ttl: ${HOLD_SEAT_QUEUE_TTL:30s}
     fast-fail:
       enabled: ${HOLD_FAST_FAIL_ENABLED:false}
       max-concurrent: ${HOLD_FAST_FAIL_MAX_CONCURRENT:50}
